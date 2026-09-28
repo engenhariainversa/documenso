@@ -29,3 +29,9 @@ SET "flags" = COALESCE("flags", '{}'::jsonb) || '{
   "signingReminders": true
 }'::jsonb,
 "updatedAt" = NOW();
+
+-- Docverse: the telemetry client is removed and its site-setting schema was
+-- dropped from the ZSiteSettingSchema union. Delete the legacy row so
+-- getSiteSettings() (which parses every row against that union) doesn't
+-- throw on instances that previously ran with telemetry enabled.
+DELETE FROM "SiteSettings" WHERE "id" = 'telemetry.installation';
