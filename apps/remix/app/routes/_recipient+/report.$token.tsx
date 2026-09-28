@@ -59,14 +59,18 @@ export default function ReportSenderPage({ loaderData }: Route.ComponentProps) {
         </h1>
 
         <p className="mt-4 max-w-[60ch] text-center text-muted-foreground leading-normal">
-          <Trans>
-            Thank you for letting us know, we have flagged this sender for review. If you have any concerns please feel
-            free to reach out to our{' '}
-            <a className="text-documenso-700 underline" href={`mailto:${SUPPORT_EMAIL}`}>
-              support team
-            </a>
-            .
-          </Trans>
+          {SUPPORT_EMAIL ? (
+            <Trans>
+              Thank you for letting us know, we have flagged this sender for review. If you have any concerns please
+              feel free to reach out to our{' '}
+              <a className="text-documenso-700 underline" href={`mailto:${SUPPORT_EMAIL}`}>
+                support team
+              </a>
+              .
+            </Trans>
+          ) : (
+            <Trans>Thank you for letting us know, we have flagged this sender for review.</Trans>
+          )}
         </p>
       </div>
     );

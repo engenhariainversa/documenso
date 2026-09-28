@@ -10,7 +10,7 @@ import type { TAlertOrganisationSeatDriftJobDefinition } from './alert-organisat
  * count (`organisationClaim.memberCount`, where `0` means unlimited).
  */
 export const run = async ({ io }: { payload: TAlertOrganisationSeatDriftJobDefinition; io: JobRunIO }) => {
-  if (!IS_BILLING_ENABLED()) {
+  if (!IS_BILLING_ENABLED() || !SUPPORT_EMAIL) {
     return;
   }
 

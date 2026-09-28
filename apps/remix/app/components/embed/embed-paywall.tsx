@@ -9,15 +9,17 @@ export const EmbedPaywall = () => {
         <p className="font-semibold text-lg">
           <Trans>This feature is not available on your current plan</Trans>
         </p>
-        <p className="mt-2 text-sm">
-          <Trans>
-            Please contact{' '}
-            <Link to={`mailto:${SUPPORT_EMAIL}`} target="_blank">
-              support
-            </Link>{' '}
-            if you have any questions.
-          </Trans>
-        </p>
+        {SUPPORT_EMAIL && (
+          <p className="mt-2 text-sm">
+            <Trans>
+              Please contact{' '}
+              <Link to={`mailto:${SUPPORT_EMAIL}`} target="_blank">
+                support
+              </Link>{' '}
+              if you have any questions.
+            </Trans>
+          </p>
+        )}
       </div>
     </div>
   );

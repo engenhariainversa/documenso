@@ -277,10 +277,14 @@ export const OrganisationMemberInviteDialog = ({ trigger, ...props }: Organisati
           <>
             <Alert className="flex flex-col justify-between p-6 sm:flex-row sm:items-center" variant="neutral">
               <AlertDescription>
-                <Trans>
-                  Your plan does not support inviting members. Please upgrade or your plan or contact sales at{' '}
-                  <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> if you would like to discuss your options.
-                </Trans>
+                {SUPPORT_EMAIL ? (
+                  <Trans>
+                    Your plan does not support inviting members. Please upgrade or your plan or contact sales at{' '}
+                    <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> if you would like to discuss your options.
+                  </Trans>
+                ) : (
+                  <Trans>Your plan does not support inviting members.</Trans>
+                )}
               </AlertDescription>
             </Alert>
 

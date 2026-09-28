@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from '@documenso/lib/constants/app';
 import { Trans } from '@lingui/react/macro';
 
 import { Button, Link, Section, Text } from '../components';
@@ -40,17 +41,19 @@ export const TemplateAdminUserCreated = ({ resetPasswordLink, assetBaseUrl }: Te
           </Text>
         </Section>
 
-        <Section className="mt-8">
-          <Text className="text-center text-muted-foreground text-sm">
-            <Trans>
-              If you didn't expect this account or have any questions, please{' '}
-              <Link href="mailto:support@documenso.com" className="text-primary">
-                contact support
-              </Link>
-              .
-            </Trans>
-          </Text>
-        </Section>
+        {SUPPORT_EMAIL && (
+          <Section className="mt-8">
+            <Text className="text-center text-muted-foreground text-sm">
+              <Trans>
+                If you didn't expect this account or have any questions, please{' '}
+                <Link href={`mailto:${SUPPORT_EMAIL}`} className="text-primary">
+                  contact support
+                </Link>
+                .
+              </Trans>
+            </Text>
+          </Section>
+        )}
       </Section>
     </>
   );

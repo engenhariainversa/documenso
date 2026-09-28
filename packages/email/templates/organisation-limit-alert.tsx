@@ -125,16 +125,18 @@ export const OrganisationLimitAlertEmailTemplate = ({
                 ))
                 .exhaustive()}
 
-              <Text className="text-center text-base">
-                {kind === 'quotaNearing' ? (
-                  <Trans>
-                    If you expect to need higher limits, please contact support at {SUPPORT_EMAIL} and we will review
-                    your account.
-                  </Trans>
-                ) : (
-                  <Trans>Please contact support at {SUPPORT_EMAIL} and we will review your account.</Trans>
-                )}
-              </Text>
+              {SUPPORT_EMAIL && (
+                <Text className="text-center text-base">
+                  {kind === 'quotaNearing' ? (
+                    <Trans>
+                      If you expect to need higher limits, please contact support at {SUPPORT_EMAIL} and we will review
+                      your account.
+                    </Trans>
+                  ) : (
+                    <Trans>Please contact support at {SUPPORT_EMAIL} and we will review your account.</Trans>
+                  )}
+                </Text>
+              )}
             </Section>
           </Container>
 
