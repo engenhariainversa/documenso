@@ -9,7 +9,7 @@ import { execSync } from 'node:child_process';
 const roots = ['apps/remix/app', 'packages/email', 'packages/ui', 'packages/lib', 'packages/trpc'];
 
 const files = execSync(
-  `grep -rlI "Documenso" ${roots.join(' ')} --include=*.ts --include=*.tsx --include=*.po`,
+  `grep -rla "Documenso" ${roots.join(' ')} --include=*.ts --include=*.tsx --include=*.po`,
   { encoding: 'utf8' },
 )
   .split('\n')
