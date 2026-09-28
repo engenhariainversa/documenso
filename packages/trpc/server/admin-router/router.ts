@@ -34,7 +34,6 @@ import { promoteMemberToOwnerRoute } from './promote-member-to-owner';
 import { resealDocumentRoute } from './reseal-document';
 import { resetOrganisationMonthlyStatRoute } from './reset-organisation-monthly-stat';
 import { resetTwoFactorRoute } from './reset-two-factor-authentication';
-import { resyncLicenseRoute } from './resync-license';
 import { swapOrganisationSubscriptionRoute } from './swap-organisation-subscription';
 import { updateAdminOrganisationRoute } from './update-admin-organisation';
 import { updateOrganisationMemberRoleRoute } from './update-organisation-member-role';
@@ -68,9 +67,6 @@ export const adminRouter = router({
     create: createSubscriptionClaimRoute,
     update: updateSubscriptionClaimRoute,
     delete: deleteSubscriptionClaimRoute,
-  },
-  license: {
-    resync: resyncLicenseRoute,
   },
   user: {
     get: getUserRoute,
