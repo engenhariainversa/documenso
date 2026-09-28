@@ -1,7 +1,6 @@
 import { prisma } from '@documenso/prisma';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
-import { jobs } from '../../jobs/client';
 import { deleteOrganisation } from '../organisation/delete-organisation';
 
 export type DeleteUserOptions = {
@@ -61,9 +60,9 @@ export const deleteUser = async ({ id }: DeleteUserOptions) => {
     );
 
   // For organisations the user owns - fully tear them down (orphan envelopes,
-  // delete the organisation, and cancel any Stripe subscription). Without this
-  // the organisations would only cascade away when the user row is deleted,
-  // leaving their subscriptions billing and account rows behind.
+  // delete the organisation). Without this the organisations would only
+  // cascade away when the user row is deleted, leaving their account rows
+  // behind.
   for (const organisation of user.ownedOrganisations) {
     await deleteOrganisation({ organisation });
   }

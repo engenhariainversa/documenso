@@ -20,7 +20,6 @@ import { ADMIN_DELETE_ORGANISATION_JOB_DEFINITION } from './definitions/internal
 import { ALERT_ORGANISATION_SEAT_DRIFT_JOB_DEFINITION } from './definitions/internal/alert-organisation-seat-drift';
 import { BACKPORT_SUBSCRIPTION_CLAIM_JOB_DEFINITION } from './definitions/internal/backport-subscription-claims';
 import { BULK_SEND_TEMPLATE_JOB_DEFINITION } from './definitions/internal/bulk-send-template';
-import { CANCEL_ORGANISATION_SUBSCRIPTION_JOB_DEFINITION } from './definitions/internal/cancel-organisation-subscription';
 import { CLEANUP_RATE_LIMITS_JOB_DEFINITION } from './definitions/internal/cleanup-rate-limits';
 import { EXECUTE_WEBHOOK_JOB_DEFINITION } from './definitions/internal/execute-webhook';
 import { EXPIRE_RECIPIENTS_SWEEP_JOB_DEFINITION } from './definitions/internal/expire-recipients-sweep';
@@ -64,7 +63,6 @@ export const jobsClient = new JobClient([
   CLEANUP_RATE_LIMITS_JOB_DEFINITION,
   ADMIN_DELETE_ORGANISATION_JOB_DEFINITION,
   ALERT_ORGANISATION_SEAT_DRIFT_JOB_DEFINITION,
-  CANCEL_ORGANISATION_SUBSCRIPTION_JOB_DEFINITION,
 ] as const);
 
 export const jobs = jobsClient;
