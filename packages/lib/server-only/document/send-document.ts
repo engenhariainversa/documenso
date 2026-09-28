@@ -1,4 +1,3 @@
-import { materializeTspAnchorsForEnvelope } from '@documenso/ee/server-only/signing/csc/materialize-anchors';
 import { resolveExpiresAt } from '@documenso/lib/constants/envelope-expiration';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
@@ -244,12 +243,6 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
         fieldsToAutoInsert.push(fieldToAutoInsert);
       }
     }
-  }
-
-  if (isTspEnvelope(envelope) && envelope.status === DocumentStatus.DRAFT) {
-    await materializeTspAnchorsForEnvelope({
-      envelopeId: envelope.id,
-    });
   }
 
   const updatedEnvelope = await prisma.$transaction(async (tx) => {

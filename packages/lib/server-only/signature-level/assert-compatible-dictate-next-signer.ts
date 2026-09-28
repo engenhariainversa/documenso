@@ -9,10 +9,11 @@ type AssertCompatibleDictateNextSignerOptions = {
 /**
  * Reject `allowDictateNextSigner = true` on AES/QES envelopes.
  *
- * The TSP sign path has no nextSigner dictation — `prepareCscRecipientSigning`
- * doesn't accept one and `executeTspSign` always advances to the strict
- * SEQUENTIAL next signer. Allowing the flag to persist on a TSP envelope
- * would advertise a UX feature the sign-time flow silently drops.
+ * The TSP sign path (removed from this fork; kept here as a defensive guard
+ * for any pre-existing AES/QES rows) has no nextSigner dictation — it always
+ * advances to the strict SEQUENTIAL next signer. Allowing the flag to persist
+ * on a TSP envelope would advertise a UX feature the sign-time flow silently
+ * drops.
  *
  * SES envelopes pass through unchanged. A `null` / `undefined` /  `false`
  * value also passes through.
