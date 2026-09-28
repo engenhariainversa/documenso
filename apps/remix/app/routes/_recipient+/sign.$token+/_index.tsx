@@ -2,7 +2,6 @@ import signingCelebration from '@documenso/assets/images/signing-celebration.png
 import { getOptionalSession } from '@documenso/auth/server/lib/utils/get-session';
 import { EnvelopeRenderProvider } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
-import { APP_SOURCE_URL } from '@documenso/lib/constants/brand';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { loadRecipientBrandingByTeamId } from '@documenso/lib/server-only/branding/load-recipient-branding';
 import { getDocumentAndSenderByToken } from '@documenso/lib/server-only/document/get-document-by-token';
@@ -38,6 +37,7 @@ import { DocumentSigningPageViewV2 } from '~/components/general/document-signing
 import { DocumentSigningProvider } from '~/components/general/document-signing/document-signing-provider';
 import { EnvelopeSigningProvider } from '~/components/general/document-signing/envelope-signing-provider';
 import { RecipientBranding } from '~/components/general/recipient-branding';
+import { SourceCodeLink } from '~/components/general/source-code-link';
 import { useCspNonce } from '~/utils/nonce';
 import { superLoaderJson, useSuperLoaderData } from '~/utils/super-json-loader';
 
@@ -380,9 +380,7 @@ const SigningPageV1 = ({ data }: { data: Awaited<ReturnType<typeof handleV1Loade
             </Link>
           ) : (
             <p className="mt-36 text-muted-foreground/60 text-sm">
-              <Link to={APP_SOURCE_URL} className="text-documenso-700 hover:text-documenso-600">
-                <Trans>Source code</Trans>
-              </Link>
+              <SourceCodeLink className="text-documenso-700 hover:text-documenso-600" />
             </p>
           )}
         </div>
@@ -462,9 +460,7 @@ const SigningPageV2 = ({ data }: { data: Awaited<ReturnType<typeof handleV2Loade
             </Link>
           ) : (
             <p className="mt-36 text-muted-foreground/60 text-sm">
-              <Link to={APP_SOURCE_URL} className="text-documenso-700 hover:text-documenso-600">
-                <Trans>Source code</Trans>
-              </Link>
+              <SourceCodeLink className="text-documenso-700 hover:text-documenso-600" />
             </p>
           )}
         </div>

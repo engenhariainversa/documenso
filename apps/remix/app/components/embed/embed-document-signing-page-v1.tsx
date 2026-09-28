@@ -1,6 +1,5 @@
 import { useAnalytics } from '@documenso/lib/client-only/hooks/use-analytics';
 import { useThrottleFn } from '@documenso/lib/client-only/hooks/use-throttle-fn';
-import { APP_SOURCE_URL } from '@documenso/lib/constants/brand';
 import { APP_I18N_OPTIONS } from '@documenso/lib/constants/i18n';
 import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
 import { AppError } from '@documenso/lib/errors/app-error';
@@ -34,6 +33,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useState } from 'react';
 
 import { BrandingLogo } from '~/components/general/branding-logo';
 import PDFViewerLazy from '~/components/general/pdf-viewer/pdf-viewer-lazy';
+import { SourceCodeLink } from '~/components/general/source-code-link';
 import { injectCss } from '~/utils/css-vars';
 import { getSigningCompletionErrorMessage } from '~/utils/toast-error-messages';
 
@@ -540,9 +540,7 @@ export const EmbedSignDocumentV1ClientPage = ({
             </>
           )}
 
-          <a href={APP_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline">
-            <Trans>Source code</Trans>
-          </a>
+          <SourceCodeLink className="text-primary-foreground/80 hover:text-primary-foreground" />
         </div>
       </div>
     </DocumentSigningRecipientProvider>

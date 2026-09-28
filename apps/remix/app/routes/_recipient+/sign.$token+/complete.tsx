@@ -27,6 +27,7 @@ import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-d
 import { ClaimAccount } from '~/components/general/claim-account';
 import { DocumentSigningAuthPageView } from '~/components/general/document-signing/document-signing-auth-page';
 import { RecipientBranding } from '~/components/general/recipient-branding';
+import { SourceCodeLink } from '~/components/general/source-code-link';
 import { useCspNonce } from '~/utils/nonce';
 
 import type { Route } from './+types/complete';
@@ -295,6 +296,10 @@ export default function CompletedSigningPage({ loaderData }: Route.ComponentProp
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-8 mb-4">
+          <SourceCodeLink />
         </div>
       </div>
     </>

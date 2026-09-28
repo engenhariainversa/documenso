@@ -12,6 +12,7 @@ import { useEmbedSigningContext } from '~/components/embed/embed-signing-context
 import { BrandingLogo } from '../branding-logo';
 import EnvelopeSignerForm from '../envelope-signing/envelope-signer-form';
 import { EnvelopeSignerCompleteDialog } from '../envelope-signing/envelope-signing-complete-dialog';
+import { SourceCodeLink } from '../source-code-link';
 import { useRequiredEnvelopeSigningContext } from './envelope-signing-provider';
 
 export const DocumentSigningMobileWidget = () => {
@@ -119,6 +120,11 @@ export const DocumentSigningMobileWidget = () => {
               )}
             </div>
           )}
+
+          {/* Always visible (not gated by isExpanded/hidePoweredBy) so it stays reachable on mobile. */}
+          <div className="flex justify-end border-border border-t px-4 py-1.5 lg:hidden">
+            <SourceCodeLink />
+          </div>
         </div>
       </div>
     </div>

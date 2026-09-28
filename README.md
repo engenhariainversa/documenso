@@ -42,7 +42,7 @@ Na prática, isso significa:
 
 - Você pode **usar, estudar, modificar e redistribuir** o código livremente, inclusive para fins comerciais.
 - Se você **hospeda uma instância modificada do Docverse e a disponibiliza para terceiros pela rede** (por exemplo, oferecendo o serviço a clientes ou usuários externos), a AGPLv3 (§13) exige que você **disponibilize o código-fonte completo dessa versão modificada** para quem usa o serviço.
-- Por isso, toda instância do Docverse exibe, no rodapé da aplicação e na página de assinatura (visível também para signatários não autenticados e no modo embutido), um link **"Código-fonte"** apontando para o repositório correspondente. Se você mantiver um fork, ajuste esse link (`APP_SOURCE_URL` em `packages/lib/constants/brand.ts`) para apontar para o seu próprio repositório público.
+- Por isso, todo usuário da instância vê um link **"Código-fonte"** apontando para o repositório correspondente — no rodapé do app autenticado (desktop e menu mobile), na página de assinatura (inclusive para signatários não autenticados), na página de conclusão da assinatura e no modo embutido (mesmo com a opção "Powered by" desativada). O componente único usado em todas essas telas é `apps/remix/app/components/general/source-code-link.tsx`. Se você mantiver um fork, ajuste o link (`APP_SOURCE_URL` em `packages/lib/constants/brand.ts`) para apontar para o seu próprio repositório público.
 - Não é permitido remover esse link ou distribuir uma versão modificada sem também disponibilizar o código-fonte correspondente — isso violaria a licença.
 
 Consulte o texto completo em [`LICENSE`](./LICENSE) e a atribuição ao projeto original em [`NOTICE`](./NOTICE).

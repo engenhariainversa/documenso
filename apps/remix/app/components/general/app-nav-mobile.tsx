@@ -2,7 +2,7 @@ import LogoImage from '@documenso/assets/images/docverse-logo.svg';
 import { authClient } from '@documenso/auth/client';
 import { useOptionalCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { useSession } from '@documenso/lib/client-only/providers/session';
-import { APP_NAME, APP_SOURCE_URL } from '@documenso/lib/constants/brand';
+import { APP_NAME } from '@documenso/lib/constants/brand';
 import { canAccessOrganisationAnalytics, formatOrganisationAnalyticsPath } from '@documenso/lib/utils/organisations';
 import { canExecuteTeamAction, formatAnalyticsPath } from '@documenso/lib/utils/teams';
 import { trpc } from '@documenso/trpc/react';
@@ -13,6 +13,7 @@ import { ReadStatus } from '@prisma/client';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 
+import { SourceCodeLink } from '~/components/general/source-code-link';
 import { useOptionalCurrentTeam } from '~/providers/team';
 
 export type AppNavMobileProps = {
@@ -125,15 +126,7 @@ export const AppNavMobile = ({ isMenuOpen, onMenuOpenChange }: AppNavMobileProps
           </div>
 
           <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} {APP_NAME} ·{' '}
-            <a
-              href={APP_SOURCE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-foreground"
-            >
-              <Trans>Source code</Trans>
-            </a>
+            © {new Date().getFullYear()} {APP_NAME} · <SourceCodeLink className="text-sm" />
             <br />
             <Trans>All rights reserved.</Trans>
           </p>
