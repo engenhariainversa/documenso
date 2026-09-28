@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 
@@ -13,7 +14,7 @@ export type DocumentCompletedEmailTemplateProps = Partial<TemplateDocumentComple
 };
 
 export const DocumentCompletedEmailTemplate = ({
-  downloadLink = 'https://documenso.com',
+  downloadLink = NEXT_PUBLIC_WEBAPP_URL(),
   documentName = 'Open Source Pledge.pdf',
   assetBaseUrl = 'http://localhost:3002',
   customBody,

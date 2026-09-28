@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
 import { formatTeamUrl } from '@documenso/lib/utils/teams';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -18,14 +19,14 @@ export type TeamEmailRemovedTemplateProps = {
 
 export const TeamEmailRemovedTemplate = ({
   assetBaseUrl = 'http://localhost:3002',
-  baseUrl = 'https://documenso.com',
+  baseUrl = NEXT_PUBLIC_WEBAPP_URL(),
   teamEmail = 'example@documenso.com',
   teamName = 'Team Name',
   teamUrl = 'demo',
 }: TeamEmailRemovedTemplateProps) => {
   const { _ } = useLingui();
 
-  const previewText = msg`Team email removed for ${teamName} on Documenso`;
+  const previewText = msg`Team email removed for ${teamName} on Docverse`;
 
   return (
     <Html>

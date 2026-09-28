@@ -2,6 +2,7 @@ import signingCelebration from '@documenso/assets/images/signing-celebration.png
 import { getOptionalSession } from '@documenso/auth/server/lib/utils/get-session';
 import { EnvelopeRenderProvider } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
+import { APP_SOURCE_URL } from '@documenso/lib/constants/brand';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { loadRecipientBrandingByTeamId } from '@documenso/lib/server-only/branding/load-recipient-branding';
 import { getDocumentAndSenderByToken } from '@documenso/lib/server-only/document/get-document-by-token';
@@ -381,8 +382,8 @@ const SigningPageV1 = ({ data }: { data: Awaited<ReturnType<typeof handleV1Loade
             <p className="mt-36 text-muted-foreground/60 text-sm">
               <Trans>
                 Want to send slick signing links like this one?{' '}
-                <Link to="https://documenso.com" className="text-documenso-700 hover:text-documenso-600">
-                  Check out Documenso
+                <Link to={APP_SOURCE_URL} className="text-documenso-700 hover:text-documenso-600">
+                  Check out Docverse
                 </Link>
                 .
               </Trans>
@@ -467,8 +468,8 @@ const SigningPageV2 = ({ data }: { data: Awaited<ReturnType<typeof handleV2Loade
             <p className="mt-36 text-muted-foreground/60 text-sm">
               <Trans>
                 Want to send slick signing links like this one?{' '}
-                <Link to="https://documenso.com" className="text-documenso-700 hover:text-documenso-600">
-                  Check out Documenso
+                <Link to={APP_SOURCE_URL} className="text-documenso-700 hover:text-documenso-600">
+                  Check out Docverse
                 </Link>
                 .
               </Trans>

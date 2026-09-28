@@ -37,10 +37,10 @@ export type EmailBrandingColorKey = (typeof EMAIL_BRANDING_COLOR_KEYS)[number];
  *
  * Derived from `TCssVarsSchema` (the persisted shape) by narrowing to the
  * email token subset and making every field required: the resolver fills every
- * token (tenant value or Documenso default), so consumers never see `undefined`.
+ * token (tenant value or Docverse default), so consumers never see `undefined`.
  *
  * Produced by `resolveEmailBrandingColors`, or `null` when the tenant has no
- * usable/safe colour set (callers fall back to the default Documenso palette).
+ * usable/safe colour set (callers fall back to the default Docverse palette).
  */
 export type EmailBrandingColors = Required<Pick<TCssVarsSchema, EmailBrandingColorKey>>;
 
@@ -69,11 +69,11 @@ export const normalizeColorToHex = (value: string | null | undefined): string | 
  * Resolve a tenant's stored `brandingColors` into an email-ready colour set.
  *
  * Each token is taken from the tenant value when it parses to a valid colour,
- * otherwise the Documenso default. We do NOT enforce contrast or readability —
+ * otherwise the Docverse default. We do NOT enforce contrast or readability —
  * if a tenant picks a low-contrast combination that is their choice; the
  * preview UI can hint at it, but the renderer just applies what was set.
  *
- * Returns `null` (⇒ caller uses the default Documenso palette) only when there
+ * Returns `null` (⇒ caller uses the default Docverse palette) only when there
  * is no `brandingColors` object at all.
  */
 export const resolveEmailBrandingColors = (

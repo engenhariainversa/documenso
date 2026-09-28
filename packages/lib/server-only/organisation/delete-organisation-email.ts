@@ -40,8 +40,8 @@ export const sendOrganisationDeleteEmail = async ({
 
   const i18n = await getI18nInstance(emailLanguage);
 
-  // This is sent through the global Documenso mailer (the org's transport is
-  // intentionally not used during deletion), so use the Documenso sender to keep
+  // This is sent through the global Docverse mailer (the org's transport is
+  // intentionally not used during deletion), so use the Docverse sender to keep
   // the From-address aligned with the sending infrastructure (SPF/DKIM). Note the
   // org's `senderEmail` on `emailContext` could be a custom transport address.
   await mailer.sendMail({

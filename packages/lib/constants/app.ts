@@ -1,5 +1,7 @@
 import { env } from '@documenso/lib/utils/env';
 
+import { APP_NAME } from './brand';
+
 export const APP_DOCUMENT_UPLOAD_SIZE_LIMIT = Number(env('NEXT_PUBLIC_DOCUMENT_SIZE_UPLOAD_LIMIT')) || 50;
 
 export const NEXT_PUBLIC_WEBAPP_URL = () => env('NEXT_PUBLIC_WEBAPP_URL') ?? 'http://localhost:3000';
@@ -55,9 +57,9 @@ export const NEXT_PRIVATE_INTERNAL_WEBAPP_URL = () =>
 export const IS_BILLING_ENABLED = () => false;
 
 /**
- * Whether this instance is Documenso Cloud (managed SaaS).
+ * Whether this instance is Docverse Cloud (managed SaaS).
  *
- * Used so we can show a different UI for Documenso Cloud and self-hosted instances since
+ * Used so we can show a different UI for Docverse Cloud and self-hosted instances since
  * there are things like billing, upsells, documenso links, etc that don't make sense for self-hosted instances.
  */
 export const IS_DOCUMENSO_CLOUD = () => env('NEXT_PUBLIC_IS_DOCUMENSO_CLOUD') === 'true';
@@ -93,12 +95,13 @@ export const IS_AI_FEATURES_CONFIGURED = (): boolean => {
 export const NEXT_PRIVATE_USE_PLAYWRIGHT_PDF = () => env('NEXT_PRIVATE_USE_PLAYWRIGHT_PDF') === 'true';
 
 export const NEXT_PRIVATE_SIGNING_TIMESTAMP_AUTHORITY = () => env('NEXT_PRIVATE_SIGNING_TIMESTAMP_AUTHORITY');
-export const NEXT_PRIVATE_SIGNING_REASON = () => env('NEXT_PRIVATE_SIGNING_REASON') || 'Signed by Documenso';
+export const NEXT_PRIVATE_SIGNING_REASON = () =>
+  env('NEXT_PRIVATE_SIGNING_REASON') || `Signed by ${APP_NAME}`;
 
 export const NEXT_PRIVATE_SIGNING_TRANSPORT = () => env('NEXT_PRIVATE_SIGNING_TRANSPORT') || 'local';
 
 /**
- * Whether this Documenso instance is running in CSC (Cloud Signature Consortium) mode.
+ * Whether this Docverse instance is running in CSC (Cloud Signature Consortium) mode.
  *
  * CSC (remote TSP-backed AES/QES) signing was removed in this fork — every
  * envelope now signs through the normal SES flow (see `signPdf` from

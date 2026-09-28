@@ -4,6 +4,7 @@ import { base32 } from '@scure/base';
 import crypto from 'crypto';
 import { createTOTPKeyURI } from 'oslo/otp';
 
+import { APP_NAME } from '../../constants/brand';
 import { DOCUMENSO_ENCRYPTION_KEY } from '../../constants/crypto';
 import { symmetricEncrypt } from '../../universal/crypto';
 
@@ -11,7 +12,7 @@ type SetupTwoFactorAuthenticationOptions = {
   user: Pick<User, 'id' | 'email'>;
 };
 
-const ISSUER = 'Documenso';
+const ISSUER = APP_NAME;
 
 export const setupTwoFactorAuthentication = async ({ user }: SetupTwoFactorAuthenticationOptions) => {
   const key = DOCUMENSO_ENCRYPTION_KEY;

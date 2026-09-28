@@ -1,3 +1,4 @@
+import { APP_NAME } from '@documenso/lib/constants/brand';
 import { Trans } from '@lingui/react/macro';
 import { Fragment } from 'react';
 
@@ -34,7 +35,7 @@ export const TemplateFooter = ({ isDocument = true, reportUrl }: TemplateFooterP
           <Trans>
             This document was sent using{' '}
             <Link className="text-primary" href="https://documen.so/mail-footer">
-              Documenso
+              Docverse
             </Link>
             .
           </Trans>
@@ -64,7 +65,7 @@ export const TemplateFooter = ({ isDocument = true, reportUrl }: TemplateFooterP
 
       {!branding.brandingEnabled && (
         <Text className="my-8 text-muted-foreground text-sm">
-          Documenso, Inc.
+          {APP_NAME}
           <br />
           2261 Market Street, #5211, San Francisco, CA 94114, USA
         </Text>

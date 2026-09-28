@@ -1,4 +1,5 @@
 import signingCelebration from '@documenso/assets/images/signing-celebration.png';
+import { APP_NAME } from '@documenso/lib/constants/brand';
 import { SigningCard3D } from '@documenso/ui/components/signing-card';
 import { Trans } from '@lingui/react/macro';
 import type { Signature } from '@prisma/client';
@@ -18,7 +19,7 @@ export const EmbedDocumentCompleted = ({ name, signature }: EmbedDocumentComplet
       <div className="mt-8 w-full max-w-md">
         <SigningCard3D
           className="mx-auto w-full"
-          name={name || 'Documenso'}
+          name={name || APP_NAME}
           signature={signature}
           signingCelebrationImage={signingCelebration}
         />

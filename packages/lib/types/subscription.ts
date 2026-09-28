@@ -48,7 +48,7 @@ export type TRateLimitArray = z.infer<typeof ZRateLimitArraySchema>;
  */
 export const ZClaimFlagsSchema = z.object({
   /**
-   * Allows disabling of Documenso branding for:
+   * Allows disabling of Docverse branding for:
    * - Certificates
    * - Emails
    * - Other?

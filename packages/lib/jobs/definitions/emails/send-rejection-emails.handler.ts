@@ -77,7 +77,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningRejectionEmail
 
   // Send confirmation email to the recipient who rejected.
   // Skipped when the organisation has email sending disabled, since this is sent on its behalf.
-  // The owner notification below intentionally uses the internal Documenso email, so it still sends.
+  // The owner notification below intentionally uses the internal Docverse email, so it still sends.
   if (!emailsDisabled && isRecipientEmailValidForSending(recipient)) {
     await io.runTask('send-rejection-confirmation-email', async () => {
       const recipientTemplate = createElement(DocumentRejectionConfirmedEmail, {

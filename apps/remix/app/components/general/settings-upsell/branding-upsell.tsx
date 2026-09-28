@@ -8,7 +8,7 @@ import { useTimedCycle } from './use-timed-cycle';
 
 const DEMO_BRANDS = [
   {
-    name: 'Documenso',
+    name: 'Docverse',
     letter: 'D',
     domain: 'noreply@app.documenso.com',
     accent: '#A2E771',
@@ -17,7 +17,7 @@ const DEMO_BRANDS = [
     sheen: 'rgba(162, 231, 113, 0.32)',
   },
   {
-    name: 'Documenso',
+    name: 'Docverse',
     letter: 'D',
     domain: 'noreply@app.documenso.com',
     accent: '#387BC7',
@@ -26,7 +26,7 @@ const DEMO_BRANDS = [
     sheen: 'rgba(56, 123, 199, 0.28)',
   },
   {
-    name: 'Documenso',
+    name: 'Docverse',
     letter: 'D',
     domain: 'noreply@app.documenso.com',
     accent: '#9747F5',

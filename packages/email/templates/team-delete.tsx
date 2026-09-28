@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
 import { formatTeamUrl } from '@documenso/lib/utils/teams';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -15,7 +16,7 @@ export type TeamDeleteEmailProps = {
 
 export const TeamDeleteEmailTemplate = ({
   assetBaseUrl = 'http://localhost:3002',
-  baseUrl = 'https://documenso.com',
+  baseUrl = NEXT_PUBLIC_WEBAPP_URL(),
   teamUrl = 'demo',
 }: TeamDeleteEmailProps) => {
   const { _ } = useLingui();

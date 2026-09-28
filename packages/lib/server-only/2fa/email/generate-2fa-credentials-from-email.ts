@@ -2,9 +2,10 @@ import { hmac } from '@noble/hashes/hmac';
 import { sha256 } from '@noble/hashes/sha256';
 import { createTOTPKeyURI } from 'oslo/otp';
 
+import { APP_NAME } from '../../../constants/brand';
 import { DOCUMENSO_ENCRYPTION_KEY } from '../../../constants/crypto';
 
-const ISSUER = 'Documenso Email 2FA';
+const ISSUER = `${APP_NAME} Email 2FA`;
 
 export type GenerateTwoFactorCredentialsFromEmailOptions = {
   envelopeId: string;
