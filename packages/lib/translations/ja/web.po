@@ -10841,6 +10841,13 @@ msgstr "証明書をダウンロードできませんでした。後でもう一
 msgid "Source"
 msgstr "ソース"
 
+#: apps/remix/app/components/embed/embed-direct-template-client-page.tsx
+#: apps/remix/app/components/embed/embed-document-signing-page-v1.tsx
+#: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/routes/_recipient+/sign.$token+/_index.tsx
+msgid "Source code"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "Space-separated list of domains. Leave empty to allow all domains."
 msgstr "ドメインを半角スペース区切りで入力します。空のままにするとすべてのドメインが許可されます。"

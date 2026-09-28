@@ -6,8 +6,8 @@
  * (e.g. "/ESign") is preserved. Passing a root-absolute path straight to
  * `new URL()` would otherwise replace the base pathname entirely.
  *
- * `getEmailAssetUrl('https://host/ESign', 'static/logo.png')` -> `https://host/ESign/static/logo.png`
- * `getEmailAssetUrl('https://host/ESign/', '/static/logo.png')` -> `https://host/ESign/static/logo.png`
+ * `getEmailAssetUrl('https://host/ESign', 'static/docverse-logo.png')` -> `https://host/ESign/static/docverse-logo.png`
+ * `getEmailAssetUrl('https://host/ESign/', '/static/docverse-logo.png')` -> `https://host/ESign/static/docverse-logo.png`
  */
 export const getEmailAssetUrl = (assetBaseUrl: string, path: string): string => {
   const base = assetBaseUrl.endsWith('/') ? assetBaseUrl : `${assetBaseUrl}/`;

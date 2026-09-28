@@ -21,7 +21,7 @@ export const TemplateBrandingLogo = ({ assetBaseUrl, className = 'mb-4 h-6' }: T
   const hasCustomBrandingLogo = branding.brandingEnabled && Boolean(branding.brandingLogo);
 
   if (!hasCustomBrandingLogo) {
-    const documensoLogoUrl = getEmailAssetUrl(assetBaseUrl, 'static/logo.png');
+    const documensoLogoUrl = getEmailAssetUrl(assetBaseUrl, 'static/docverse-logo.png');
 
     return <Img src={documensoLogoUrl} alt="Docverse Logo" className={className} />;
   }

@@ -1,5 +1,6 @@
 import { useAnalytics } from '@documenso/lib/client-only/hooks/use-analytics';
 import { useThrottleFn } from '@documenso/lib/client-only/hooks/use-throttle-fn';
+import { APP_SOURCE_URL } from '@documenso/lib/constants/brand';
 import { APP_I18N_OPTIONS } from '@documenso/lib/constants/i18n';
 import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
 import { AppError } from '@documenso/lib/errors/app-error';
@@ -529,14 +530,20 @@ export const EmbedSignDocumentV1ClientPage = ({
           <DocumentReadOnlyFields documentMeta={metadata || undefined} fields={completedFields} />
         </div>
 
-        {!hidePoweredBy && (
-          <div className="fixed bottom-0 left-0 z-40 rounded-tr bg-primary px-2 py-1 font-medium text-primary-foreground text-xs opacity-60 hover:opacity-100">
-            <span>
-              <Trans>Powered by</Trans>
-            </span>
-            <BrandingLogo className="ml-2 inline-block h-[14px]" />
-          </div>
-        )}
+        <div className="fixed bottom-0 left-0 z-40 flex items-center gap-2 rounded-tr bg-primary px-2 py-1 font-medium text-primary-foreground text-xs opacity-60 hover:opacity-100">
+          {!hidePoweredBy && (
+            <>
+              <span>
+                <Trans>Powered by</Trans>
+              </span>
+              <BrandingLogo className="inline-block h-[14px]" />
+            </>
+          )}
+
+          <a href={APP_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline">
+            <Trans>Source code</Trans>
+          </a>
+        </div>
       </div>
     </DocumentSigningRecipientProvider>
   );

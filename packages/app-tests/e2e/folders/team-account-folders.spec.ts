@@ -87,15 +87,15 @@ test('[TEAMS]: can create a document inside a document folder', async ({ page })
     page.getByRole('button', { name: 'Document (Legacy)' }).click(),
   ]);
 
-  await fileChooser.setFiles(path.join(__dirname, '../../../assets/documenso-supporter-pledge.pdf'));
+  await fileChooser.setFiles(path.join(__dirname, '../../../../assets/example.pdf'));
 
   await page.waitForTimeout(3000);
 
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  await expectTextToBeVisible(page, 'example.pdf');
 
   await page.goto(`/t/${team.url}/documents/f/${teamFolder.id}`);
 
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  await expectTextToBeVisible(page, 'example.pdf');
 });
 
 test('[TEAMS]: can pin a document folder', async ({ page }) => {
@@ -402,16 +402,16 @@ test('[TEAMS]: can create a template inside a template folder', async ({ page })
     page.getByRole('button', { name: 'Template (Legacy)' }).click(),
   ]);
 
-  await fileChooser.setFiles(path.join(__dirname, '../../../assets/documenso-supporter-pledge.pdf'));
+  await fileChooser.setFiles(path.join(__dirname, '../../../../assets/example.pdf'));
 
   await page.waitForTimeout(3000);
 
   // Expect redirect.
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  await expectTextToBeVisible(page, 'example.pdf');
 
   // Return to folder and verify file is visible.
   await page.goto(`/t/${team.url}/templates/f/${folder.id}`);
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  await expectTextToBeVisible(page, 'example.pdf');
 });
 
 test('[TEAMS]: can pin a template folder', async ({ page }) => {
@@ -886,11 +886,11 @@ test('[TEAMS]: documents inherit folder visibility', async ({ page }) => {
     page.getByRole('button', { name: 'Document (Legacy)' }).click(),
   ]);
 
-  await fileChooser.setFiles(path.join(__dirname, '../../../assets/documenso-supporter-pledge.pdf'));
+  await fileChooser.setFiles(path.join(__dirname, '../../../../assets/example.pdf'));
 
   await page.waitForTimeout(3000);
 
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  await expectTextToBeVisible(page, 'example.pdf');
 
   await expect(page.getByRole('combobox').filter({ hasText: 'Admins only' })).toBeVisible();
 });

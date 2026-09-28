@@ -1,253 +1,151 @@
-<img src="https://github.com/documenso/documenso/assets/13398220/a643571f-0239-46a6-a73e-6bef38d1228b" alt="Documenso Logo">
+<p align="center">
+  <img src="packages/assets/images/docverse-logo.svg" alt="Docverse" width="220">
+</p>
 
-<p align="center" style="margin-top: 20px">
-  <p align="center">
-  The Open Source DocuSign Alternative.
+<p align="center">
+  Alternativa 100% open source (AGPLv3) para assinatura eletrônica de documentos.
   <br>
-    <a href="https://documenso.com"><strong>Learn more »</strong></a>
-    <br />
-    <br />
-    <a href="https://documen.so/discord">Discord</a>
-    ·
-    <a href="https://documenso.com">Website</a>
-    ·
-    <a href="https://docs.documenso.com">Documentation</a>
-    ·
-    <a href="https://github.com/documenso/documenso/issues">Issues</a>
-    ·
-    <a href="https://documen.so/live">Upcoming Releases</a>
-    ·
-    <a href="https://documen.so/roadmap">Roadmap</a>
-  </p>
+  Fork do <a href="https://github.com/documenso/documenso">Documenso</a>, sem código sob licença comercial e sem travas de licenciamento.
 </p>
 
 <p align="center">
-   <a href="https://documen.so/discord"><img src="https://img.shields.io/badge/Discord-documen.so/discord-%235865F2" alt="Join Documenso on Discord"></a>
-   <a href="https://github.com/documenso/documenso/stargazers"><img src="https://img.shields.io/github/stars/documenso/documenso" alt="Github Stars"></a>
-   <a href="https://github.com/documenso/documenso/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
-   <a href="https://github.com/documenso/documenso/pulse"><img src="https://img.shields.io/github/commit-activity/m/documenso/documenso" alt="Commits-per-month"></a>
-   <a href="https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/documenso/documenso">
-   <img alt="open in devcontainer" src="https://img.shields.io/static/v1?label=Dev%20Containers&message=Enabled&color=blue&logo=visualstudiocode" />
-   </a>
-   <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg" alt="Contributor Covenant"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="Licença AGPLv3"></a>
 </p>
 
-<div align="center">
-  <img src="https://github.com/documenso/documenso/assets/13398220/d96ed533-6f34-4a97-be9b-442bdb189c69" style="width: 80%;" />
-</div>
+## O que é o Docverse
 
-## About Documenso
+O Docverse é uma plataforma de assinatura eletrônica de documentos — o mesmo tipo de produto que o DocuSign ou o Documenso, mas **100% open source, sob a licença GNU Affero General Public License v3.0 (AGPLv3), sem nenhuma feature paga, sem trava de licença e sem telemetria enviada para terceiros**.
 
-Signing documents digitally should be fast and easy and should be the best practice for every document signed worldwide. This is technically quite easy today, but it also introduces a new party to every signature: The signing tool providers. While this is not a problem in itself, it should make us think about how we want these providers of trust to work. Documenso aims to be the world's most trusted document-signing tool. This trust is built by empowering you to self-host Documenso and review how it works under the hood.
+O objetivo do projeto é oferecer uma base de código que qualquer pessoa ou organização possa auditar, rodar e modificar livremente, sabendo exatamente o que o software faz com os documentos e dados que passam por ele.
 
-Join us in creating the next generation of open trust infrastructure.
+## Origem: fork do Documenso
 
-## Recognition
+O Docverse nasceu como um fork do [Documenso](https://github.com/documenso/documenso) (a partir da v2.18.0). O Documenso é um excelente produto, mas parte de suas funcionalidades avançadas é distribuída sob uma licença comercial (o antigo diretório `packages/ee`) e o produto hospedado depende de billing, licenciamento e telemetria próprios.
 
-<p align="center">
-  <a href="https://www.producthunt.com/posts/documenso?utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-documenso" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=395047&theme=light&period=daily" alt="Documenso - The&#0032;open&#0032;source&#0032;DocuSign&#0032;alternative | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-  <a href="https://www.producthunt.com/posts/documenso?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-documenso" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=395047&theme=light" alt="Documenso - The&#0032;Open&#0032;Source&#0032;DocuSign&#0032;Alternative&#0046; | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-</p>
+O Docverse faz um trabalho diferente a partir do mesmo código AGPL:
 
-## Community and Next Steps 🎯
+- **Remove por completo** o antigo `packages/ee` (código sob a licença comercial do Documenso). Nenhuma linha desse diretório foi copiada, adaptada ou usada como referência — o Docverse não contém, direta ou indiretamente, código sob a licença comercial do Documenso.
+- **Reimplementa de forma independente**, sob AGPLv3, funcionalidades equivalentes às que dependiam desse código (por exemplo, limites de uso sempre ilimitados).
+- **Remove billing/Stripe, licenciamento e telemetria** (ver seção abaixo).
+- Mantém compatibilidade com o restante do código AGPL do Documenso (rotas de API `/api/v1`/`/api/v2`, variáveis de ambiente, nomes de pacotes `@documenso/*`), para facilitar o acompanhamento de mudanças do projeto original.
 
-- Try Documenso by self-hosting it or signing up at [documenso.com](https://documenso.com).
-- Tell us what you think in the [Discussions](https://github.com/documenso/documenso/discussions).
-- Join the [Discord server](https://documen.so/discord) for any questions and getting to know other community members.
-- ⭐ the repository to help us raise awareness.
-- Open detailed [issues](https://github.com/documenso/documenso/issues) to report bugs or propose features.
+Este repositório permanece um fork ativo: quando fizer sentido, mudanças do upstream serão trazidas para o Docverse.
 
-## Contributing
+- Repositório do Docverse: <https://github.com/engenhariainversa/documenso>
+- Repositório upstream (Documenso): <https://github.com/documenso/documenso>
 
-> **Note**: We no longer accept external pull requests, aside from a small group of trusted contributors we reach out to directly. The best way to contribute is through detailed issues. Read [Why We're Pausing External Pull Requests](https://documenso.com/blog/why-we-re-pausing-external-pull-requests) for the reasoning.
+## Licença: AGPLv3 e o que isso implica para quem hospeda
 
-- Documenso stays open source. You can read, audit, run, and fork the code.
-- To report issues or propose changes, see our [contribution guide](https://github.com/documenso/documenso/blob/main/CONTRIBUTING.md).
+O Docverse é distribuído sob a [GNU Affero General Public License v3.0](./LICENSE) (AGPLv3), a mesma licença de base do Documenso.
 
-## Contact us
+Na prática, isso significa:
 
-Contact us if you are interested in our Enterprise plan for large organizations that need extra flexibility and control.
+- Você pode **usar, estudar, modificar e redistribuir** o código livremente, inclusive para fins comerciais.
+- Se você **hospeda uma instância modificada do Docverse e a disponibiliza para terceiros pela rede** (por exemplo, oferecendo o serviço a clientes ou usuários externos), a AGPLv3 (§13) exige que você **disponibilize o código-fonte completo dessa versão modificada** para quem usa o serviço.
+- Por isso, toda instância do Docverse exibe, no rodapé da aplicação e na página de assinatura (visível também para signatários não autenticados e no modo embutido), um link **"Código-fonte"** apontando para o repositório correspondente. Se você mantiver um fork, ajuste esse link (`APP_SOURCE_URL` em `packages/lib/constants/brand.ts`) para apontar para o seu próprio repositório público.
+- Não é permitido remover esse link ou distribuir uma versão modificada sem também disponibilizar o código-fonte correspondente — isso violaria a licença.
 
-<a href="https://cal.com/timurercan/enterprise-customers?utm_source=banner&utm_campaign=oss"><img alt="Book us with Cal.com" src="https://cal.com/book-with-cal-dark.svg" /></a>
+Consulte o texto completo em [`LICENSE`](./LICENSE) e a atribuição ao projeto original em [`NOTICE`](./NOTICE).
 
-## Tech Stack
+## O que foi removido em relação ao Documenso
 
-<p align="left">
-  <a href="https://www.typescriptlang.org"><img src="https://shields.io/badge/TypeScript-3178C6?logo=TypeScript&logoColor=FFF&style=flat-square" alt="TypeScript"></a>
-  <a href="https://prisma.io"><img width="122" height="20" src="http://made-with.prisma.io/indigo.svg" alt="Made with Prisma" /></a>
-  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/tailwindcss-0F172A?&logo=tailwindcss" alt="Tailwind CSS"></a>
-  <a href=""><img src="" alt=""></a>
-  <a href=""><img src="" alt=""></a>
-  <a href=""><img src="" alt=""></a>
-  <a href=""><img src="" alt=""></a>
-  <a href=""><img src="" alt=""></a>
-</p>
+Em relação ao Documenso original, o Docverse removeu:
 
-- [TypeScript](https://www.typescriptlang.org/) - Language
-- [React Router v7](https://reactrouter.com/) - Framework
-- [Hono](https://hono.dev/) - Server
-- [Prisma](https://www.prisma.io/) - ORM
-- [Tailwind CSS](https://tailwindcss.com/) - CSS
-- [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/) - Component Library
-- [react-email](https://react.email/) - Email Templates
-- [Lingui](https://lingui.dev/) - Internationalization
-- [tRPC](https://trpc.io/) - API
-- [@libpdf/core](https://www.npmjs.com/package/@libpdf/core) - PDF Signatures
-- [pdf.js](https://mozilla.github.io/pdf.js/) - Viewing PDFs
-- [@cantoo/pdf-lib](https://github.com/cantoo-scribe/pdf-lib) - PDF manipulation
-- [Stripe](https://stripe.com/) - Payments
-- [Biome](https://biomejs.dev/) - Linting & Formatting
-- [Playwright](https://playwright.dev/) - E2E Testing
+- **`packages/ee`** — todo o código sob a licença comercial do Documenso (billing, domínios de e-mail por organização, SSO por organização, assinatura remota/CSC, etc.). Onde fazia sentido, os pontos de chamada foram reimplementados de forma independente e 100% AGPL; features que ainda não têm reimplementação ficam desligadas/escondidas, sem nenhum código do `ee`.
+- **Billing e Stripe** — não há planos pagos, cobrança, assentos pagos ou telas de billing/faturas.
+- **Licenciamento** — não há chave de licença, verificação de licença expirada ou trava de features por licença.
+- **Telemetria** — o telemetry client do Documenso (que reportava uso para servidores do Documenso) foi removido. Não há coleta de telemetria própria do produto por padrão.
 
-<!-- - Support for [opensignpdf (requires Java on server)](https://github.com/open-pdf-sign) is currently planned. -->
+Como consequência direta: **todas as funcionalidades do Docverse são gratuitas e estão disponíveis por padrão** em qualquer instância self-hosted, incluindo recursos que no Documenso dependiam de licença comercial ou de plano pago (por exemplo, marca branca / customização de marca, embed sem "Powered by", e reautenticação/OTP na assinatura).
 
-## Local Development
+O logo e o favicon atuais são **provisórios** (um wordmark em texto "Docverse") — a identidade visual definitiva será definida em uma etapa futura.
 
-### Requirements
+## Como rodar localmente
 
-To run Documenso locally, you will need
+### Requisitos
 
-- Node.js (v24 or above)
-- Postgres SQL Database
-- Docker (optional)
+- Node.js (v24 ou superior)
+- Banco PostgreSQL
+- Docker (opcional, recomendado para o ambiente de desenvolvimento)
 
-### Developer Quickstart
+### Passo a passo
 
-> **Note**: This is a quickstart for developers. It assumes that you have both [docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/) installed on your machine.
+1. Clone o repositório:
 
-Want to get up and running quickly? Follow these steps:
+   ```sh
+   git clone https://github.com/engenhariainversa/documenso.git docverse
+   cd docverse
+   ```
 
-1. [Fork this repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks) to your GitHub account.
+2. Configure o arquivo `.env` a partir do `.env.example`:
 
-After forking the repository, clone it to your local device by using the following command:
+   ```sh
+   cp .env.example .env
+   ```
 
-```sh
-git clone https://github.com/<your-username>/documenso
-```
+3. Suba a infraestrutura local (Postgres, mailserver, etc.) e instale dependências:
 
-2. Set up your `.env` file using the recommendations in the `.env.example` file. Alternatively, just run `cp .env.example .env` to get started with our handpicked defaults.
+   ```sh
+   npm run dx
+   ```
 
-3. Run `npm run dx` in the root directory
+4. Suba o servidor de desenvolvimento:
 
-   - This will spin up a postgres database and inbucket mailserver in a docker container.
+   ```sh
+   npm run dev
+   ```
 
-4. Run `npm run dev` in the root directory
+   Ou, para fazer os dois passos acima de uma vez:
 
-5. Want it even faster? Just use
+   ```sh
+   npm run d
+   ```
 
-```sh
-npm run d
-```
+#### Pontos de acesso
 
-#### Access Points for Your Application
+1. **App** — <http://localhost:3000>
+2. **Caixa de entrada de e-mails de teste** — <http://localhost:9000>
+3. **Banco de dados** — porta `54320`
+4. **Painel do S3 (armazenamento)** — <http://localhost:9001>
 
-1. **App** - http://localhost:3000
-2. **Incoming Mail Access** - http://localhost:9000
-3. **Database Connection Details**
+## Self-hosting e variáveis de ambiente
 
-   - **Port**: 54320
-   - **Connection**: Use your favorite database client to connect using the provided port.
+O Docverse mantém, quase integralmente, o mesmo modelo de configuração, variáveis de ambiente e opções de deploy (Docker, Docker Compose, Kubernetes, deploy manual) do Documenso. Onde o conteúdo é o mesmo, a documentação oficial do Documenso continua sendo a referência mais completa:
 
-4. **S3 Storage Dashboard** - http://localhost:9001
-
-## Developer Setup
-
-### Manual Setup
-
-Follow the [manual setup guide](https://docs.documenso.com/docs/developers/local-development/manual) to configure Documenso on your local machine.
-
-### Run in Gitpod
-
-- Click below to launch a ready-to-use Gitpod workspace in your browser.
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/documenso/documenso)
-
-### Run in DevContainer
-
-We support DevContainers for VSCode. [Click here to get started.](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/documenso/documenso)
-
-### Video walkthrough
-
-If you're a visual learner and prefer to watch a video walkthrough of setting up Documenso locally, check out this video:
-
-[![Watch the video](https://img.youtube.com/vi/Y0ppIQrEnZs/hqdefault.jpg)](https://youtu.be/Y0ppIQrEnZs)
-
-## Docker
-
-We provide official Docker images on [DockerHub](https://hub.docker.com/r/documenso/documenso) and [GitHub Container Registry](https://ghcr.io/documenso/documenso).
-
-For setup instructions, see the [Docker Deployment](https://docs.documenso.com/docs/self-hosting/deployment/docker) and [Docker Compose](https://docs.documenso.com/docs/self-hosting/deployment/docker-compose) guides.
-
-## Self Hosting
-
-We support a variety of deployment methods including Docker, Docker Compose, Railway, Kubernetes, and manual deployment.
-
-For full instructions, requirements, and configuration details, see the [Self Hosting documentation](https://docs.documenso.com/docs/self-hosting).
-
-### One-Click Deploys
-
-> [!NOTE]
-> Want to see another provider listed here? Please [open a provider request](https://github.com/documenso/documenso/issues/new?template=deploy-provider-request.yml) instead of a PR so the community can signal interest. PRs adding deploy badges without a prior issue will be closed.
-
-<table>
-  <tr>
-    <td align="center" width="200">
-      <a href="https://railway.com/deploy/DjrRRX?referralCode=EZR3s0&utm_medium=integration&utm_source=template&utm_campaign=generic">
-        <img src="https://railway.com/button.svg" alt="Deploy on Railway" height="40" />
-      </a>
-    </td>
-    <td align="center" width="200">
-      <a href="https://render.com/deploy?repo=https://github.com/documenso/documenso">
-        <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" height="40" />
-      </a>
-    </td>
-    <td align="center" width="200">
-      <a href="https://app.koyeb.com/deploy?type=git&repository=github.com/documenso/documenso&branch=main&name=documenso-app&builder=dockerfile&dockerfile=/docker/Dockerfile">
-        <img src="https://www.koyeb.com/static/images/deploy/button.svg" alt="Deploy to Koyeb" height="40" />
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="200">
-      <a href="https://elest.io/open-source/documenso">
-        <img src="https://elest.io/images/logos/deploy-to-elestio-btn.png" alt="Deploy on Elestio" height="40" />
-      </a>
-    </td>
-    <td align="center" width="200"></td>
-    <td align="center" width="200"></td>
-  </tr>
-</table>
-
-## Security
-
-If you believe you have found a security vulnerability in Documenso, please report it through our [Security Policy](https://github.com/documenso/documenso/security/policy). We prioritize private reports via [GitHub Security Advisories](https://github.com/documenso/documenso/security/advisories/new). See [SECURITY.md](./SECURITY.md) for scope and details.
-
-## Troubleshooting
-
-For troubleshooting self-hosted deployments, see the [Troubleshooting guide](https://docs.documenso.com/docs/self-hosting/maintenance/troubleshooting) and [Tips & Common Pitfalls](https://docs.documenso.com/docs/self-hosting/getting-started/tips).
-
-### I'm not receiving any emails when using the developer quickstart.
-
-When using the developer quickstart, an [Inbucket](https://inbucket.org/) server will be spun up in a docker container that will store all outgoing emails locally for you to view.
-
-The Web UI can be found at http://localhost:9000, while the SMTP port will be on localhost:2500.
-
-### I can't see environment variables in my package scripts.
-
-Wrap your package script with the `with:env` script like such:
-
-```
-npm run with:env -- npm run myscript
-```
-
-The same can be done when using `npx` for one of the bin scripts:
-
-```
-npm run with:env -- npx myscript
-```
-
-This will load environment variables from your `.env` and `.env.local` files.
-
-## Repo Activity
-
-![Repository Activity](https://repobeats.axiom.co/api/embed/622a2e9aa709696f7226304b5b7178a5741b3868.svg)
+- [Documentação de self-hosting](https://docs.documenso.com/docs/self-hosting)
+- [Deploy com Docker](https://docs.documenso.com/docs/self-hosting/deployment/docker)
+- [Deploy com Docker Compose](https://docs.documenso.com/docs/self-hosting/deployment/docker-compose)
+- [Configuração manual do ambiente de desenvolvimento](https://docs.documenso.com/docs/developers/local-development/manual)
+- [Troubleshooting](https://docs.documenso.com/docs/self-hosting/maintenance/troubleshooting)
+
+Ao seguir esses guias, ignore qualquer referência a billing, chaves de licença ou telemetria do Documenso — no Docverse essas partes não existem e todas as funcionalidades estão liberadas por padrão.
+
+## Especificações e histórico de decisões
+
+As specs e o histórico de decisões técnicas deste fork (o que foi removido, como e por quê) ficam em [`docs/superpowers/specs/`](./docs/superpowers/specs/).
+
+## Stack técnica
+
+- [TypeScript](https://www.typescriptlang.org/) — linguagem
+- [React Router v7](https://reactrouter.com/) — framework
+- [Hono](https://hono.dev/) — servidor
+- [Prisma](https://www.prisma.io/) — ORM
+- [Tailwind CSS](https://tailwindcss.com/) — CSS
+- [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/) — componentes
+- [react-email](https://react.email/) — templates de e-mail
+- [Lingui](https://lingui.dev/) — internacionalização
+- [tRPC](https://trpc.io/) — API
+- [@libpdf/core](https://www.npmjs.com/package/@libpdf/core) — assinaturas em PDF
+- [pdf.js](https://mozilla.github.io/pdf.js/) — visualização de PDFs
+- [@cantoo/pdf-lib](https://github.com/cantoo-scribe/pdf-lib) — manipulação de PDF
+- [Biome](https://biomejs.dev/) — lint e formatação
+- [Playwright](https://playwright.dev/) — testes E2E
+
+## Segurança
+
+Se você encontrar uma vulnerabilidade de segurança, veja [`SECURITY.md`](./SECURITY.md) para saber como reportar.
+
+## Licença e atribuição
+
+- [`LICENSE`](./LICENSE) — texto completo da AGPLv3 (mantido sem alterações).
+- [`NOTICE`](./NOTICE) — atribuição ao projeto original (Documenso) e informações sobre o que este fork não inclui.

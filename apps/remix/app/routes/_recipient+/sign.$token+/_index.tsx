@@ -380,13 +380,9 @@ const SigningPageV1 = ({ data }: { data: Awaited<ReturnType<typeof handleV1Loade
             </Link>
           ) : (
             <p className="mt-36 text-muted-foreground/60 text-sm">
-              <Trans>
-                Want to send slick signing links like this one?{' '}
-                <Link to={APP_SOURCE_URL} className="text-documenso-700 hover:text-documenso-600">
-                  Check out Docverse
-                </Link>
-                .
-              </Trans>
+              <Link to={APP_SOURCE_URL} className="text-documenso-700 hover:text-documenso-600">
+                <Trans>Source code</Trans>
+              </Link>
             </p>
           )}
         </div>
@@ -466,13 +462,9 @@ const SigningPageV2 = ({ data }: { data: Awaited<ReturnType<typeof handleV2Loade
             </Link>
           ) : (
             <p className="mt-36 text-muted-foreground/60 text-sm">
-              <Trans>
-                Want to send slick signing links like this one?{' '}
-                <Link to={APP_SOURCE_URL} className="text-documenso-700 hover:text-documenso-600">
-                  Check out Docverse
-                </Link>
-                .
-              </Trans>
+              <Link to={APP_SOURCE_URL} className="text-documenso-700 hover:text-documenso-600">
+                <Trans>Source code</Trans>
+              </Link>
             </p>
           )}
         </div>

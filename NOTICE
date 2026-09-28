@@ -1,0 +1,12 @@
+Docverse
+Copyright (C) 2026 Engenharia Inversa
+
+Docverse is a derivative work of Documenso (https://github.com/documenso/documenso),
+Copyright (C) Documenso, Inc., licensed under the GNU Affero General Public License v3.0.
+
+Docverse is licensed under the GNU Affero General Public License v3.0 (see LICENSE).
+It does not include any code distributed under the Documenso Commercial License
+(the former packages/ee directory has been removed; equivalent features are
+independent reimplementations).
+
+Source code: https://github.com/engenhariainversa/documenso

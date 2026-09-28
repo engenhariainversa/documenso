@@ -6142,6 +6142,13 @@ msgstr "Na vjen keq, nuk mundëm të shkarkonim certifikatën. Ju lutemi provoni
 msgid "Source"
 msgstr "Burimi"
 
+#: apps/remix/app/components/embed/embed-direct-template-client-page.tsx
+#: apps/remix/app/components/embed/embed-document-signing-page-v1.tsx
+#: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/routes/_recipient+/sign.$token+/_index.tsx
+msgid "Source code"
+msgstr ""
+
 #: apps/remix/app/routes/_authenticated+/admin+/_layout.tsx
 msgid "Stats"
 msgstr "Statistika"
