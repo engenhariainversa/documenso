@@ -1,7 +1,6 @@
 import { router } from '../trpc';
 import { adminSearchRoute } from './admin-search';
 import { createAdminOrganisationRoute } from './create-admin-organisation';
-import { createStripeCustomerRoute } from './create-stripe-customer';
 import { createSubscriptionClaimRoute } from './create-subscription-claim';
 import { createUserRoute } from './create-user';
 import { deleteDocumentRoute } from './delete-document';
@@ -32,13 +31,10 @@ import { getAdminTeamRoute } from './get-admin-team';
 import { getEmailDomainRoute } from './get-email-domain';
 import { getUserRoute } from './get-user';
 import { promoteMemberToOwnerRoute } from './promote-member-to-owner';
-import { reregisterEmailDomainRoute } from './reregister-email-domain';
 import { resealDocumentRoute } from './reseal-document';
 import { resetOrganisationMonthlyStatRoute } from './reset-organisation-monthly-stat';
 import { resetTwoFactorRoute } from './reset-two-factor-authentication';
-import { resyncLicenseRoute } from './resync-license';
 import { swapOrganisationSubscriptionRoute } from './swap-organisation-subscription';
-import { syncOrganisationSubscriptionRoute } from './sync-organisation-subscription';
 import { updateAdminOrganisationRoute } from './update-admin-organisation';
 import { updateOrganisationMemberRoleRoute } from './update-organisation-member-role';
 import { updateRecipientRoute } from './update-recipient';
@@ -55,7 +51,6 @@ export const adminRouter = router({
     delete: deleteOrganisationRoute,
     subscription: {
       swap: swapOrganisationSubscriptionRoute,
-      sync: syncOrganisationSubscriptionRoute,
     },
     stats: {
       find: findOrganisationStatsRoute,
@@ -72,12 +67,6 @@ export const adminRouter = router({
     create: createSubscriptionClaimRoute,
     update: updateSubscriptionClaimRoute,
     delete: deleteSubscriptionClaimRoute,
-  },
-  stripe: {
-    createCustomer: createStripeCustomerRoute,
-  },
-  license: {
-    resync: resyncLicenseRoute,
   },
   user: {
     get: getUserRoute,
@@ -104,7 +93,6 @@ export const adminRouter = router({
   emailDomain: {
     find: findEmailDomainsRoute,
     get: getEmailDomainRoute,
-    reregister: reregisterEmailDomainRoute,
   },
   emailTransport: {
     find: findEmailTransportsRoute,

@@ -1,14 +1,10 @@
 import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
-import { SUBSCRIPTION_STATUS_MAP } from '@documenso/lib/constants/billing';
 import { AppError } from '@documenso/lib/errors/app-error';
-import { LicenseClient } from '@documenso/lib/server-only/license/license-client';
-import type { TLicenseClaim } from '@documenso/lib/types/license';
 import { SUBSCRIPTION_CLAIM_FEATURE_FLAGS } from '@documenso/lib/types/subscription';
 import { getHighestOrganisationRoleInGroup } from '@documenso/lib/utils/organisations';
 import { trpc } from '@documenso/trpc/react';
 import type { TGetAdminOrganisationResponse } from '@documenso/trpc/server/admin-router/get-admin-organisation.types';
 import { ZUpdateAdminOrganisationRequestSchema } from '@documenso/trpc/server/admin-router/update-admin-organisation.types';
-import { cn } from '@documenso/ui/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@documenso/ui/primitives/accordion';
 import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/alert';
 import { Badge } from '@documenso/ui/primitives/badge';
@@ -31,18 +27,17 @@ import { useToast } from '@documenso/ui/primitives/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { msg } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { OrganisationMemberRole, SubscriptionStatus } from '@prisma/client';
-import { ExternalLinkIcon, InfoIcon, Loader } from 'lucide-react';
+import { OrganisationMemberRole } from '@prisma/client';
+import { InfoIcon, Loader } from 'lucide-react';
 import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { match } from 'ts-pattern';
 import type { z } from 'zod';
 
 import { AdminOrganisationDeleteDialog } from '~/components/dialogs/admin-organisation-delete-dialog';
 import { AdminOrganisationMemberDeleteDialog } from '~/components/dialogs/admin-organisation-member-delete-dialog';
 import { AdminOrganisationMemberUpdateDialog } from '~/components/dialogs/admin-organisation-member-update-dialog';
-import { AdminOrganisationSyncSubscriptionDialog } from '~/components/dialogs/admin-organisation-sync-subscription-dialog';
 import { AdminGlobalSettingsSection } from '~/components/general/admin-global-settings-section';
 import { ClaimLimitFields } from '~/components/general/claim-limit-fields';
 import { GenericErrorLayout } from '~/components/general/generic-error-layout';
@@ -51,21 +46,9 @@ import { SettingsHeader } from '~/components/general/settings-header';
 
 import type { Route } from './+types/organisations.$id';
 
-export async function loader() {
-  const licenseData = await LicenseClient.getInstance()?.getCachedLicense();
-
-  return {
-    licenseFlags: licenseData?.license?.flags,
-  };
-}
-
-export default function OrganisationGroupSettingsPage({ params, loaderData }: Route.ComponentProps) {
-  const { licenseFlags } = loaderData;
-
+export default function OrganisationGroupSettingsPage({ params }: Route.ComponentProps) {
   const { i18n, t } = useLingui();
   const { toast } = useToast();
-
-  const navigate = useNavigate();
 
   const organisationId = params.id;
 
@@ -77,25 +60,6 @@ export default function OrganisationGroupSettingsPage({ params, loaderData }: Ro
       retry: false,
     },
   );
-
-  const { mutateAsync: createStripeCustomer, isPending: isCreatingStripeCustomer } =
-    trpc.admin.stripe.createCustomer.useMutation({
-      onSuccess: async () => {
-        await navigate(0);
-
-        toast({
-          title: t`Success`,
-          description: t`Stripe customer created successfully`,
-        });
-      },
-      onError: () => {
-        toast({
-          title: t`Error`,
-          description: t`We couldn't create a Stripe customer. Please try again.`,
-          variant: 'destructive',
-        });
-      },
-    });
 
   const teamsColumns = useMemo(() => {
     return [
@@ -311,95 +275,7 @@ export default function OrganisationGroupSettingsPage({ params, loaderData }: Ro
         </Accordion>
       </div>
 
-      <SettingsHeader
-        hideDivider
-        title={t`Manage subscription`}
-        subtitle={t`Manage the ${organisation.name} organisation subscription`}
-        className="mt-16"
-      />
-
-      <Alert
-        className={cn(
-          'my-6 flex flex-col justify-between p-6 sm:flex-row sm:items-center',
-          organisation.subscription?.status === SubscriptionStatus.ACTIVE &&
-            'border border-green-600/20 bg-green-50 dark:border-green-500/20 dark:bg-green-500/10',
-          organisation.subscription?.status === SubscriptionStatus.INACTIVE && 'opacity-60',
-        )}
-        variant="neutral"
-      >
-        <div className="mb-4 sm:mb-0">
-          <AlertTitle>
-            <Trans>Subscription</Trans>
-          </AlertTitle>
-
-          <AlertDescription className="mr-2">
-            {organisation.subscription ? (
-              <span className="flex items-center gap-2">
-                {organisation.subscription.status === SubscriptionStatus.ACTIVE && (
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-green-600 dark:bg-green-400" aria-hidden="true" />
-                )}
-                <span>{i18n._(SUBSCRIPTION_STATUS_MAP[organisation.subscription.status])} subscription found</span>
-              </span>
-            ) : (
-              <span>
-                <Trans>No subscription found</Trans>
-              </span>
-            )}
-          </AlertDescription>
-        </div>
-
-        {!organisation.customerId && (
-          <div>
-            <Button
-              variant="outline"
-              className="bg-background"
-              loading={isCreatingStripeCustomer}
-              onClick={async () => createStripeCustomer({ organisationId })}
-            >
-              <Trans>Create Stripe customer</Trans>
-            </Button>
-          </div>
-        )}
-
-        {organisation.customerId && !organisation.subscription && (
-          <div>
-            <Button variant="outline" className="bg-background" asChild>
-              <Link
-                target="_blank"
-                to={`https://dashboard.stripe.com/customers/${organisation.customerId}?create=subscription&subscription_default_customer=${organisation.customerId}`}
-              >
-                <Trans>Create subscription</Trans>
-                <ExternalLinkIcon className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        )}
-
-        {organisation.subscription && (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <AdminOrganisationSyncSubscriptionDialog
-              organisationId={organisationId}
-              trigger={
-                <Button variant="outline" className="bg-background">
-                  <Trans>Sync Stripe subscription</Trans>
-                </Button>
-              }
-            />
-
-            <Button variant="outline" className="bg-background" asChild>
-              <Link
-                target="_blank"
-                to={`https://dashboard.stripe.com/subscriptions/${organisation.subscription.planId}`}
-              >
-                <Trans>Manage subscription</Trans>
-                <ExternalLinkIcon className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        )}
-      </Alert>
-
-      <OrganisationAdminForm organisation={organisation} licenseFlags={licenseFlags} />
+      <OrganisationAdminForm organisation={organisation} />
 
       <div className="mt-16 space-y-10">
         <div>
@@ -467,7 +343,6 @@ type TUpdateGenericOrganisationDataFormSchema = z.infer<typeof ZUpdateGenericOrg
 
 type OrganisationAdminFormOptions = {
   organisation: TGetAdminOrganisationResponse;
-  licenseFlags?: TLicenseClaim;
 };
 
 const GenericOrganisationAdminForm = ({ organisation }: OrganisationAdminFormOptions) => {
@@ -571,7 +446,7 @@ const ZUpdateOrganisationBillingFormSchema = ZUpdateAdminOrganisationRequestSche
 
 type TUpdateOrganisationBillingFormSchema = z.infer<typeof ZUpdateOrganisationBillingFormSchema>;
 
-const OrganisationAdminForm = ({ organisation, licenseFlags }: OrganisationAdminFormOptions) => {
+const OrganisationAdminForm = ({ organisation }: OrganisationAdminFormOptions) => {
   const { toast } = useToast();
   const { t } = useLingui();
 
@@ -580,11 +455,6 @@ const OrganisationAdminForm = ({ organisation, licenseFlags }: OrganisationAdmin
   const { data: transportsData } = trpc.admin.emailTransport.find.useQuery({ perPage: 100 });
   const transports = transportsData?.data ?? [];
   const NONE_VALUE = '__none__';
-
-  const hasRestrictedEnterpriseFeatures = Object.values(SUBSCRIPTION_CLAIM_FEATURE_FLAGS).some(
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    (flag) => flag.isEnterprise && !licenseFlags?.[flag.key as keyof TLicenseClaim],
-  );
 
   const form = useForm<TUpdateOrganisationBillingFormSchema>({
     resolver: zodResolver(ZUpdateOrganisationBillingFormSchema),
@@ -831,10 +701,9 @@ const OrganisationAdminForm = ({ organisation, licenseFlags }: OrganisationAdmin
           </p>
 
           <div className="mt-3 space-y-2 rounded-md border p-4">
-            {Object.values(SUBSCRIPTION_CLAIM_FEATURE_FLAGS).map(({ key, label, isEnterprise }) => {
-              const isRestrictedFeature = isEnterprise && !licenseFlags?.[key as keyof TLicenseClaim]; // eslint-disable-line @typescript-eslint/consistent-type-assertions
-
-              return (
+            {Object.values(SUBSCRIPTION_CLAIM_FEATURE_FLAGS)
+              .filter(({ hidden }) => !hidden)
+              .map(({ key, label }) => (
                 <FormField
                   key={key}
                   control={form.control}
@@ -843,44 +712,21 @@ const OrganisationAdminForm = ({ organisation, licenseFlags }: OrganisationAdmin
                     <FormItem className="flex items-center space-x-2">
                       <FormControl>
                         <div className="flex items-center">
-                          <Checkbox
-                            id={`flag-${key}`}
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isRestrictedFeature && !field.value} // Allow disabling of restricted features.
-                          />
+                          <Checkbox id={`flag-${key}`} checked={field.value} onCheckedChange={field.onChange} />
 
                           <label
                             className="ml-2 flex flex-row items-center text-muted-foreground text-sm"
                             htmlFor={`flag-${key}`}
                           >
                             {label}
-                            {isRestrictedFeature && ' ¹'}
                           </label>
                         </div>
                       </FormControl>
                     </FormItem>
                   )}
                 />
-              );
-            })}
+              ))}
           </div>
-
-          {hasRestrictedEnterpriseFeatures && (
-            <Alert variant="neutral" className="mt-4">
-              <AlertDescription>
-                <span>¹&nbsp;</span>
-                <Trans>Your current license does not include these features.</Trans>{' '}
-                <Link
-                  to="https://docs.documenso.com/users/licenses/enterprise-edition"
-                  target="_blank"
-                  className="text-foreground underline hover:opacity-80"
-                >
-                  <Trans>Learn more</Trans>
-                </Link>
-              </AlertDescription>
-            </Alert>
-          )}
         </div>
 
         <ClaimLimitFields control={form.control} prefix="claims." />

@@ -7,6 +7,7 @@ import { match } from 'ts-pattern';
 
 import { getI18nInstance } from '../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
+import { APP_NAME } from '../../constants/brand';
 import type { TPasswordChangeSource } from '../../jobs/definitions/emails/send-password-reset-success-email';
 import { env } from '../../utils/env';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
@@ -50,8 +51,8 @@ export const sendResetPassword = async ({ userId, source }: SendResetPasswordOpt
       name: user.name || '',
     },
     from: {
-      name: env('NEXT_PRIVATE_SMTP_FROM_NAME') || 'Documenso',
-      address: env('NEXT_PRIVATE_SMTP_FROM_ADDRESS') || 'noreply@documenso.com',
+      name: env('NEXT_PRIVATE_SMTP_FROM_NAME') || APP_NAME,
+      address: env('NEXT_PRIVATE_SMTP_FROM_ADDRESS') || 'noreply@example.com',
     },
     subject,
     html,

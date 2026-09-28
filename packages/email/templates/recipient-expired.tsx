@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 
@@ -13,7 +14,7 @@ export const RecipientExpiredTemplate = ({
   documentName = 'Open Source Pledge.pdf',
   recipientName = 'John Doe',
   recipientEmail = 'john@example.com',
-  documentLink = 'https://documenso.com',
+  documentLink = NEXT_PUBLIC_WEBAPP_URL(),
   assetBaseUrl = 'http://localhost:3002',
 }: RecipientExpiredEmailTemplateProps) => {
   const { _ } = useLingui();

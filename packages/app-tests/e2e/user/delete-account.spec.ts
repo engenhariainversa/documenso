@@ -4,7 +4,7 @@ import { getUserByEmail } from '@documenso/lib/server-only/user/get-user-by-emai
 import { nanoid } from '@documenso/lib/universal/id';
 import { prisma } from '@documenso/prisma';
 import type { User } from '@documenso/prisma/client';
-import { DocumentStatus, EnvelopeType, SubscriptionStatus } from '@documenso/prisma/client';
+import { DocumentStatus, EnvelopeType } from '@documenso/prisma/client';
 import { seedBlankDocument } from '@documenso/prisma/seed/documents';
 import { seedOrganisationMembers } from '@documenso/prisma/seed/organisations';
 import { seedUser } from '@documenso/prisma/seed/users';
@@ -250,60 +250,6 @@ test('[USER][DELETE_ACCOUNT]: deleting the owner removes the org but keeps membe
   expect(await prisma.user.findUnique({ where: { id: owner.id } })).toBeNull();
 });
 
-// ─── Subscription cancellation is scheduled for owned orgs ───────────────────
-
-test('[USER][DELETE_ACCOUNT]: a cancel-subscription job is enqueued for an owned org that has a subscription', async ({
-  page,
-}) => {
-  const { user, organisation } = await seedUser();
-
-  const planId = `sub_e2e_${nanoid()}`;
-
-  await prisma.subscription.create({
-    data: {
-      status: SubscriptionStatus.ACTIVE,
-      planId,
-      priceId: `price_e2e_${nanoid()}`,
-      customerId: `cus_e2e_${nanoid()}`,
-      organisationId: organisation.id,
-    },
-  });
-
-  await deleteAccountViaUi(page, user.email);
-
-  await waitForOrganisationToBeGone(organisation.id);
-
-  // The deletion must schedule the Stripe subscription cancellation job with the
-  // captured planId (the Subscription row itself cascades away with the org).
-  await expect
-    .poll(
-      async () => {
-        const job = await prisma.backgroundJob.findFirst({
-          where: {
-            jobId: 'internal.cancel-organisation-subscription',
-            payload: { path: ['organisationId'], equals: organisation.id },
-          },
-        });
-
-        if (!job) {
-          return null;
-        }
-
-        return (job.payload as { stripeSubscriptionId?: string }).stripeSubscriptionId ?? null;
-      },
-      {
-        message: 'cancel-organisation-subscription job was not enqueued',
-        timeout: 15_000,
-        intervals: [250, 500, 1000],
-      },
-    )
-    .toBe(planId);
-
-  // The local Subscription row cascades away with the organisation — which is
-  // exactly why the planId has to be captured into the job payload beforehand.
-  expect(await prisma.subscription.findUnique({ where: { planId } })).toBeNull();
-});
-
 // ─── Owned org account (SSO) rows are cleaned up, members survive ────────────
 
 test('[USER][DELETE_ACCOUNT]: org-linked account rows are removed when an owned org is torn down', async ({ page }) => {
@@ -341,27 +287,6 @@ test('[USER][DELETE_ACCOUNT]: org-linked account rows are removed when an owned 
   // ...but the member user it belonged to survives (only the org + owner are removed).
   expect(await prisma.user.findUnique({ where: { id: member.id } })).not.toBeNull();
   expect(await prisma.user.findUnique({ where: { id: owner.id } })).toBeNull();
-});
-
-// ─── Sad path: no subscription means no cancel job is enqueued ────────────────
-
-test('[USER][DELETE_ACCOUNT]: no cancel-subscription job is enqueued when the owned org has no subscription', async ({
-  page,
-}) => {
-  const { user, organisation } = await seedUser();
-
-  await deleteAccountViaUi(page, user.email);
-
-  await waitForOrganisationToBeGone(organisation.id);
-
-  const job = await prisma.backgroundJob.findFirst({
-    where: {
-      jobId: 'internal.cancel-organisation-subscription',
-      payload: { path: ['organisationId'], equals: organisation.id },
-    },
-  });
-
-  expect(job).toBeNull();
 });
 
 // ─── Sad path: a mismatched confirmation email leaves everything intact ───────

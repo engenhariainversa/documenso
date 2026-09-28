@@ -1,7 +1,7 @@
-import { useLimits } from '@documenso/ee/server-only/limits/provider/client';
 import { useAnalytics } from '@documenso/lib/client-only/hooks/use-analytics';
 import { useEnvelopeAutosave } from '@documenso/lib/client-only/hooks/use-envelope-autosave';
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
+import { useLimits } from '@documenso/lib/client-only/providers/limits';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { APP_DOCUMENT_UPLOAD_SIZE_LIMIT } from '@documenso/lib/constants/app';
 import type { TEditorEnvelope } from '@documenso/lib/types/envelope-editor';

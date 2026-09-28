@@ -2,11 +2,12 @@ import MailChecker from 'mailchecker';
 
 import { env } from '../utils/env';
 import { NEXT_PUBLIC_WEBAPP_URL } from './app';
+import { APP_NAME } from './brand';
 
 export const SALT_ROUNDS = 12;
 
 export const IDENTITY_PROVIDER_NAME: Record<string, string> = {
-  DOCUMENSO: 'Documenso',
+  DOCUMENSO: APP_NAME,
   GOOGLE: 'Google',
   MICROSOFT: 'Microsoft',
   OIDC: 'OIDC',

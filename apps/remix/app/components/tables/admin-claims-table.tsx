@@ -1,5 +1,4 @@
 import { useUpdateSearchParams } from '@documenso/lib/client-only/hooks/use-update-search-params';
-import type { TLicenseClaim } from '@documenso/lib/types/license';
 import { ZUrlSearchParamsSchema } from '@documenso/lib/types/search-params';
 import { SUBSCRIPTION_CLAIM_FEATURE_FLAGS } from '@documenso/lib/types/subscription';
 import { trpc } from '@documenso/trpc/react';
@@ -25,11 +24,7 @@ import { Link, useSearchParams } from 'react-router';
 import { ClaimDeleteDialog } from '../dialogs/claim-delete-dialog';
 import { ClaimUpdateDialog } from '../dialogs/claim-update-dialog';
 
-type AdminClaimsTableProps = {
-  licenseFlags?: TLicenseClaim;
-};
-
-export const AdminClaimsTable = ({ licenseFlags }: AdminClaimsTableProps) => {
+export const AdminClaimsTable = () => {
   const { t } = useLingui();
   const { toast } = useToast();
 
@@ -87,7 +82,9 @@ export const AdminClaimsTable = ({ licenseFlags }: AdminClaimsTableProps) => {
       {
         header: t`Feature Flags`,
         cell: ({ row }) => {
-          const flags = Object.values(SUBSCRIPTION_CLAIM_FEATURE_FLAGS).filter(({ key }) => row.original.flags[key]);
+          const flags = Object.values(SUBSCRIPTION_CLAIM_FEATURE_FLAGS).filter(
+            ({ key, hidden }) => !hidden && row.original.flags[key],
+          );
 
           if (flags.length === 0) {
             return <p className="text-muted-foreground text-xs">{t`None`}</p>;
@@ -117,7 +114,6 @@ export const AdminClaimsTable = ({ licenseFlags }: AdminClaimsTableProps) => {
 
               <ClaimUpdateDialog
                 claim={row.original}
-                licenseFlags={licenseFlags}
                 trigger={
                   <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
                     <div>

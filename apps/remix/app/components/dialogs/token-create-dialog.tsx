@@ -171,7 +171,7 @@ export const TokenCreateDialog = ({ trigger, ...props }: TokenCreateDialogProps)
               </DialogTitle>
 
               <DialogDescription>
-                <Trans>Use API tokens to authenticate with the Documenso API.</Trans>
+                <Trans>Use API tokens to authenticate with the Docverse API.</Trans>
               </DialogDescription>
             </DialogHeader>
 

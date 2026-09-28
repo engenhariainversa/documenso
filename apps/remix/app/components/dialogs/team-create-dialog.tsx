@@ -177,10 +177,14 @@ export const TeamCreateDialog = ({ trigger, onCreated, ...props }: TeamCreateDia
           <>
             <Alert className="flex flex-col justify-between p-6 sm:flex-row sm:items-center" variant="neutral">
               <AlertDescription className="mt-0">
-                <Trans>
-                  You have reached the maximum number of teams for your plan. Please contact sales at{' '}
-                  <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> if you would like to adjust your plan.
-                </Trans>
+                {SUPPORT_EMAIL ? (
+                  <Trans>
+                    You have reached the maximum number of teams for your plan. Please contact sales at{' '}
+                    <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> if you would like to adjust your plan.
+                  </Trans>
+                ) : (
+                  <Trans>You have reached the maximum number of teams for your plan.</Trans>
+                )}
               </AlertDescription>
             </Alert>
 

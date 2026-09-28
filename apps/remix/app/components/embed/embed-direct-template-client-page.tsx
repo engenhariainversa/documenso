@@ -43,6 +43,7 @@ import { useSearchParams } from 'react-router';
 
 import { BrandingLogo } from '~/components/general/branding-logo';
 import PDFViewerLazy from '~/components/general/pdf-viewer/pdf-viewer-lazy';
+import { SourceCodeLink } from '~/components/general/source-code-link';
 import { injectCss } from '~/utils/css-vars';
 import { getDirectTemplateErrorMessage } from '~/utils/toast-error-messages';
 
@@ -531,14 +532,18 @@ export const EmbedDirectTemplateClientPage = ({
         />
       </div>
 
-      {!hidePoweredBy && (
-        <div className="fixed bottom-0 left-0 z-40 rounded-tr bg-primary px-2 py-1 font-medium text-primary-foreground text-xs opacity-60 hover:opacity-100">
-          <span>
-            <Trans>Powered by</Trans>
-          </span>
-          <BrandingLogo className="ml-2 inline-block h-[14px]" />
-        </div>
-      )}
+      <div className="fixed bottom-0 left-0 z-40 flex items-center gap-2 rounded-tr bg-primary px-2 py-1 font-medium text-primary-foreground text-xs opacity-60 hover:opacity-100">
+        {!hidePoweredBy && (
+          <>
+            <span>
+              <Trans>Powered by</Trans>
+            </span>
+            <BrandingLogo className="inline-block h-[14px]" />
+          </>
+        )}
+
+        <SourceCodeLink className="text-primary-foreground/80 hover:text-primary-foreground" />
+      </div>
     </div>
   );
 };

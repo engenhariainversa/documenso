@@ -75,7 +75,6 @@ export const SettingsOrgSwitcher = ({ currentOrgUrl }: SettingsOrgSwitcherProps)
       organisation: {
         url: destinationOrg.url,
         currentOrganisationRole: destinationOrg.currentOrganisationRole,
-        organisationClaim: destinationOrg.organisationClaim,
       },
       team: manageableTeam ? { url: manageableTeam.url, currentTeamRole: manageableTeam.currentTeamRole } : null,
       hasManageableBillingOrgs,

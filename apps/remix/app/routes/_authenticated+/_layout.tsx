@@ -13,8 +13,8 @@ import { Link, Outlet, redirect } from 'react-router';
 import { AppBanner } from '~/components/general/app-banner';
 import { Header } from '~/components/general/app-header';
 import { GenericErrorLayout } from '~/components/general/generic-error-layout';
-import { OrganisationBillingBanner } from '~/components/general/organisations/organisation-billing-banner';
 import { OrganisationQuotaBanner } from '~/components/general/organisations/organisation-quota-banner';
+import { SourceCodeLink } from '~/components/general/source-code-link';
 import { VerifyEmailBanner } from '~/components/general/verify-email-banner';
 import { TeamProvider } from '~/providers/team';
 
@@ -112,8 +112,6 @@ export default function Layout({ loaderData, params, matches }: Route.ComponentP
     <OrganisationProvider organisation={currentOrganisation}>
       <TeamProvider team={currentTeam || null}>
         <div className={cn({ 'md:flex md:h-dvh md:flex-col md:overflow-hidden': layoutMode === 'settings' })}>
-          <OrganisationBillingBanner />
-
           <OrganisationQuotaBanner />
 
           {!user.emailVerified && <VerifyEmailBanner email={user.email} />}
@@ -130,6 +128,12 @@ export default function Layout({ loaderData, params, matches }: Route.ComponentP
           >
             <Outlet />
           </main>
+
+          {!hideHeader && (
+            <footer className="flex justify-center border-border border-t px-4 py-2 md:justify-end md:px-8">
+              <SourceCodeLink />
+            </footer>
+          )}
         </div>
       </TeamProvider>
     </OrganisationProvider>

@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
 import { RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -22,7 +23,7 @@ export type DocumentReminderEmailTemplateProps = {
 export const DocumentReminderEmailTemplate = ({
   recipientName = 'John Doe',
   documentName = 'Open Source Pledge.pdf',
-  signDocumentLink = 'https://documenso.com',
+  signDocumentLink = NEXT_PUBLIC_WEBAPP_URL(),
   assetBaseUrl = 'http://localhost:3002',
   customBody,
   role = RecipientRole.SIGNER,

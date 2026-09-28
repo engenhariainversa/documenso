@@ -1,4 +1,4 @@
-import { useLimits } from '@documenso/ee/server-only/limits/provider/client';
+import { useLimits } from '@documenso/lib/client-only/providers/limits';
 import { trpc as trpcReact } from '@documenso/trpc/react';
 import { Alert, AlertDescription } from '@documenso/ui/primitives/alert';
 import { Button } from '@documenso/ui/primitives/button';

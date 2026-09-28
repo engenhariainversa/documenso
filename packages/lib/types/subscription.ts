@@ -48,7 +48,7 @@ export type TRateLimitArray = z.infer<typeof ZRateLimitArraySchema>;
  */
 export const ZClaimFlagsSchema = z.object({
   /**
-   * Allows disabling of Documenso branding for:
+   * Allows disabling of Docverse branding for:
    * - Certificates
    * - Emails
    * - Other?
@@ -94,7 +94,7 @@ export const SUBSCRIPTION_CLAIM_FEATURE_FLAGS: Record<
   {
     label: string;
     key: keyof TClaimFlags;
-    isEnterprise?: boolean;
+    hidden?: boolean;
   }
 > = {
   unlimitedDocuments: {
@@ -107,17 +107,16 @@ export const SUBSCRIPTION_CLAIM_FEATURE_FLAGS: Record<
   },
   hidePoweredBy: {
     key: 'hidePoweredBy',
-    label: 'Hide Documenso branding by',
+    label: 'Hide Docverse branding',
   },
   emailDomains: {
     key: 'emailDomains',
     label: 'Email domains',
-    isEnterprise: true,
+    hidden: true,
   },
   embedAuthoring: {
     key: 'embedAuthoring',
     label: 'Embed authoring',
-    isEnterprise: true,
   },
   embedSigning: {
     key: 'embedSigning',
@@ -126,7 +125,6 @@ export const SUBSCRIPTION_CLAIM_FEATURE_FLAGS: Record<
   embedAuthoringWhiteLabel: {
     key: 'embedAuthoringWhiteLabel',
     label: 'White label for embed authoring',
-    isEnterprise: true,
   },
   embedSigningWhiteLabel: {
     key: 'embedSigningWhiteLabel',
@@ -135,17 +133,15 @@ export const SUBSCRIPTION_CLAIM_FEATURE_FLAGS: Record<
   cfr21: {
     key: 'cfr21',
     label: '21 CFR',
-    isEnterprise: true,
   },
   hipaa: {
     key: 'hipaa',
     label: 'HIPAA',
-    isEnterprise: true,
   },
   authenticationPortal: {
     key: 'authenticationPortal',
     label: 'Authentication portal',
-    isEnterprise: true,
+    hidden: true,
   },
   allowLegacyEnvelopes: {
     key: 'allowLegacyEnvelopes',
@@ -158,7 +154,7 @@ export const SUBSCRIPTION_CLAIM_FEATURE_FLAGS: Record<
   cscQesSigning: {
     key: 'cscQesSigning',
     label: 'QES signing',
-    isEnterprise: true,
+    hidden: true,
   },
   disableEmails: {
     key: 'disableEmails',

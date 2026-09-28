@@ -37,6 +37,7 @@ import { DocumentSigningAttachmentsPopover } from '../document-signing/document-
 import { EnvelopeItemSelector } from '../envelope-editor/envelope-file-selector';
 import EnvelopeSignerForm from '../envelope-signing/envelope-signer-form';
 import { EnvelopeSignerHeader } from '../envelope-signing/envelope-signer-header';
+import { SourceCodeLink } from '../source-code-link';
 import { DocumentSigningMobileWidget } from './document-signing-mobile-widget';
 import { DocumentSigningRejectDialog } from './document-signing-reject-dialog';
 import { useRequiredEnvelopeSigningContext } from './envelope-signing-provider';
@@ -281,19 +282,18 @@ export const DocumentSigningPageViewV2 = () => {
                 <DocumentSigningMobileWidget />
               </div>
 
-              {!hidePoweredBy && (
-                <a
-                  href="https://documenso.com"
-                  target="_blank"
-                  className="fixed right-0 bottom-0 z-40 hidden cursor-pointer rounded-tl bg-primary px-2 py-1 font-medium text-primary-foreground text-xs opacity-60 hover:opacity-100 lg:block"
-                  rel="noopener"
-                >
-                  <span>
-                    <Trans>Powered by</Trans>
-                  </span>
-                  <BrandingLogo className="ml-2 inline-block h-[14px]" />
-                </a>
-              )}
+              <div className="fixed right-0 bottom-0 z-40 hidden items-center gap-2 rounded-tl bg-primary px-2 py-1 font-medium text-primary-foreground text-xs opacity-60 hover:opacity-100 lg:flex">
+                {!hidePoweredBy && (
+                  <>
+                    <span>
+                      <Trans>Powered by</Trans>
+                    </span>
+                    <BrandingLogo className="inline-block h-[14px]" />
+                  </>
+                )}
+
+                <SourceCodeLink className="text-primary-foreground/80 hover:text-primary-foreground" />
+              </div>
             </div>
           </div>
         </div>

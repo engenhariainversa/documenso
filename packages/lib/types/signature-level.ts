@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * The cryptographic signature tier an envelope is signed at.
  *
- * - `SES` — Simple Electronic Signature; the default Documenso flow signed
+ * - `SES` — Simple Electronic Signature; the default Docverse flow signed
  *   with the instance-held certificate.
  * - `AES` — Advanced Electronic Signature; recipient-bound signing through a
  *   Cloud Signature Consortium (CSC) Trust Service Provider.

@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 
@@ -10,7 +11,7 @@ import { TemplateForgotPassword } from '../template-components/template-forgot-p
 export type ForgotPasswordTemplateProps = Partial<TemplateForgotPasswordProps>;
 
 export const ForgotPasswordTemplate = ({
-  resetPasswordLink = 'https://documenso.com',
+  resetPasswordLink = NEXT_PUBLIC_WEBAPP_URL(),
   assetBaseUrl = 'http://localhost:3002',
 }: ForgotPasswordTemplateProps) => {
   const { _ } = useLingui();

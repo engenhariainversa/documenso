@@ -1,5 +1,5 @@
-import { useLimits } from '@documenso/ee/server-only/limits/provider/client';
 import { useUpdateSearchParams } from '@documenso/lib/client-only/hooks/use-update-search-params';
+import { useLimits } from '@documenso/lib/client-only/providers/limits';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { formatTemplatesPath } from '@documenso/lib/utils/teams';
 import type { TFindTemplatesResponse } from '@documenso/trpc/server/template-router/schema';

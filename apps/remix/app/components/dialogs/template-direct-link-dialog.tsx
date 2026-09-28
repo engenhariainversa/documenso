@@ -1,5 +1,5 @@
-import { useLimits } from '@documenso/ee/server-only/limits/provider/client';
 import { useCopyToClipboard } from '@documenso/lib/client-only/hooks/use-copy-to-clipboard';
+import { useLimits } from '@documenso/lib/client-only/providers/limits';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { DIRECT_TEMPLATE_RECIPIENT_EMAIL } from '@documenso/lib/constants/direct-templates';
 import { RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';

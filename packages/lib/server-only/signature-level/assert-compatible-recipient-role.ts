@@ -12,9 +12,10 @@ type AssertCompatibleRecipientRoleOptions = {
  * Reject `RecipientRole.ASSISTANT` on AES/QES envelopes.
  *
  * Assistant recipients pre-fill fields on behalf of downstream signers. The
- * TSP flow signs each recipient's complete PDF state with their own CSC
- * credential, so an assistant role has no sign-time identity to bind to and
- * `prepareCscRecipientSigning` has no handler for it.
+ * TSP flow (removed from this fork; kept here as a defensive guard for any
+ * pre-existing AES/QES rows) signs each recipient's complete PDF state with
+ * their own remote signing credential, so an assistant role has no sign-time
+ * identity to bind to.
  *
  * SES envelopes pass through unchanged.
  */

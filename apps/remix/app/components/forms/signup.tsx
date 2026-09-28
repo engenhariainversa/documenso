@@ -1,6 +1,7 @@
 import communityCardsImage from '@documenso/assets/images/community-cards.png';
 import { authClient } from '@documenso/auth/client';
 import { useAnalytics } from '@documenso/lib/client-only/hooks/use-analytics';
+import { NEXT_PUBLIC_PRIVACY_URL, NEXT_PUBLIC_TERMS_URL } from '@documenso/lib/constants/app';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { ZNameSchema } from '@documenso/lib/types/name';
 import { env } from '@documenso/lib/utils/env';
@@ -86,6 +87,10 @@ export const SignUpForm = ({
 
   const turnstileSiteKey = env('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
   const turnstileRef = useRef<TurnstileInstance>(null);
+
+  const termsUrl = NEXT_PUBLIC_TERMS_URL();
+  const privacyUrl = NEXT_PUBLIC_PRIVACY_URL();
+  const hasLegalLinks = Boolean(termsUrl && privacyUrl);
 
   const hasSocialAuthEnabled = isGoogleSignupEnabled || isMicrosoftSignupEnabled || isOidcSignupEnabled;
 
@@ -406,27 +411,21 @@ export const SignUpForm = ({
             )}
           </form>
         </Form>
-        <p className="mt-6 text-muted-foreground text-xs">
-          <Trans>
-            By proceeding, you agree to our{' '}
-            <Link
-              to="https://documen.so/terms"
-              target="_blank"
-              className="text-documenso-700 duration-200 hover:opacity-70"
-            >
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link
-              to="https://documen.so/privacy"
-              target="_blank"
-              className="text-documenso-700 duration-200 hover:opacity-70"
-            >
-              Privacy Policy
-            </Link>
-            .
-          </Trans>
-        </p>
+        {hasLegalLinks && (
+          <p className="mt-6 text-muted-foreground text-xs">
+            <Trans>
+              By proceeding, you agree to our{' '}
+              <Link to={termsUrl ?? ''} target="_blank" className="text-documenso-700 duration-200 hover:opacity-70">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link to={privacyUrl ?? ''} target="_blank" className="text-documenso-700 duration-200 hover:opacity-70">
+                Privacy Policy
+              </Link>
+              .
+            </Trans>
+          </p>
+        )}
       </div>
     </div>
   );

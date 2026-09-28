@@ -1,4 +1,3 @@
-import { getServerLimits } from '@documenso/ee/server-only/limits/server';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { jobs } from '@documenso/lib/jobs/client';
 import { captureServerEvent } from '@documenso/lib/server-only/analytics/capture-server-event';
@@ -9,6 +8,7 @@ import { createDocumentData } from '@documenso/lib/server-only/document-data/cre
 import { createEnvelope } from '@documenso/lib/server-only/envelope/create-envelope';
 import { duplicateEnvelope } from '@documenso/lib/server-only/envelope/duplicate-envelope';
 import { updateEnvelope } from '@documenso/lib/server-only/envelope/update-envelope';
+import { getServerLimits } from '@documenso/lib/server-only/limits/get-server-limits';
 import {
   createDocumentFromDirectTemplate,
   ZCreateDocumentFromDirectTemplateResponseSchema,

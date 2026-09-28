@@ -1,8 +1,6 @@
-import type { TLicenseClaim } from '@documenso/lib/types/license';
 import { SUBSCRIPTION_CLAIM_FEATURE_FLAGS } from '@documenso/lib/types/subscription';
 import { trpc } from '@documenso/trpc/react';
 import { ZCreateSubscriptionClaimRequestSchema } from '@documenso/trpc/server/admin-router/create-subscription-claim.types';
-import { Alert, AlertDescription } from '@documenso/ui/primitives/alert';
 import { Checkbox } from '@documenso/ui/primitives/checkbox';
 import {
   Form,
@@ -19,7 +17,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
 import type { SubscriptionClaim } from '@prisma/client';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router';
 import type { z } from 'zod';
 
 import { ClaimLimitFields } from '../general/claim-limit-fields';
@@ -30,21 +27,14 @@ type SubscriptionClaimFormProps = {
   subscriptionClaim: Omit<SubscriptionClaim, 'id' | 'createdAt' | 'updatedAt'>;
   onFormSubmit: (data: SubscriptionClaimFormValues) => Promise<void>;
   formSubmitTrigger?: React.ReactNode;
-  licenseFlags?: TLicenseClaim;
 };
 
 export const SubscriptionClaimForm = ({
   subscriptionClaim,
   onFormSubmit,
   formSubmitTrigger,
-  licenseFlags,
 }: SubscriptionClaimFormProps) => {
   const { t } = useLingui();
-
-  const hasRestrictedEnterpriseFeatures = Object.values(SUBSCRIPTION_CLAIM_FEATURE_FLAGS).some(
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    (flag) => flag.isEnterprise && !licenseFlags?.[flag.key as keyof TLicenseClaim],
-  );
 
   const form = useForm<SubscriptionClaimFormValues>({
     resolver: zodResolver(ZCreateSubscriptionClaimRequestSchema),
@@ -191,10 +181,9 @@ export const SubscriptionClaimForm = ({
             </FormLabel>
 
             <div className="mt-2 space-y-2 rounded-md border p-4">
-              {Object.values(SUBSCRIPTION_CLAIM_FEATURE_FLAGS).map(({ key, label, isEnterprise }) => {
-                const isRestrictedFeature = isEnterprise && !licenseFlags?.[key as keyof TLicenseClaim]; // eslint-disable-line @typescript-eslint/consistent-type-assertions
-
-                return (
+              {Object.values(SUBSCRIPTION_CLAIM_FEATURE_FLAGS)
+                .filter(({ hidden }) => !hidden)
+                .map(({ key, label }) => (
                   <FormField
                     key={key}
                     control={form.control}
@@ -203,44 +192,21 @@ export const SubscriptionClaimForm = ({
                       <FormItem className="flex items-center space-x-2">
                         <FormControl>
                           <div className="flex items-center">
-                            <Checkbox
-                              id={`flag-${key}`}
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              disabled={isRestrictedFeature && !field.value} // Allow disabling of restricted features.
-                            />
+                            <Checkbox id={`flag-${key}`} checked={field.value} onCheckedChange={field.onChange} />
 
                             <label
                               className="ml-2 flex flex-row items-center text-muted-foreground text-sm"
                               htmlFor={`flag-${key}`}
                             >
                               {label}
-                              {isRestrictedFeature && ' ¹'}
                             </label>
                           </div>
                         </FormControl>
                       </FormItem>
                     )}
                   />
-                );
-              })}
+                ))}
             </div>
-
-            {hasRestrictedEnterpriseFeatures && (
-              <Alert variant="neutral" className="mt-4">
-                <AlertDescription>
-                  <span>¹&nbsp;</span>
-                  <Trans>Your current license does not include these features.</Trans>{' '}
-                  <Link
-                    to="https://docs.documenso.com/users/licenses/enterprise-edition"
-                    target="_blank"
-                    className="text-foreground underline hover:opacity-80"
-                  >
-                    <Trans>Learn more</Trans>
-                  </Link>
-                </AlertDescription>
-              </Alert>
-            )}
           </div>
 
           <ClaimLimitFields control={form.control} disabled={form.formState.isSubmitting} />

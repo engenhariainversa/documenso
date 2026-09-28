@@ -121,6 +121,11 @@ export const run = async ({
 
   // Email our support team. Purposefully sent from the internal email since the
   // global mailer is not authorized to send from custom per-plan transport addresses.
+  // Skipped entirely when no support inbox is configured (SUPPORT_EMAIL unset).
+  if (!SUPPORT_EMAIL) {
+    return;
+  }
+
   await io.runTask('send-organisation-limit-alert-support-email', async () => {
     await mailer.sendMail({
       to: SUPPORT_EMAIL,

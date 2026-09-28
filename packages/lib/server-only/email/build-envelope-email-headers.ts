@@ -8,7 +8,7 @@ export type BuildEnvelopeEmailHeadersOptions = {
  * Builds opaque sender-attribution headers stamped onto outgoing user-triggered
  * envelope emails. These appear in AWS SES bounce/complaint notifications (when
  * "include original headers" is enabled) so an abusive send can be traced back
- * to the originating Documenso user via the admin panel.
+ * to the originating Docverse user via the admin panel.
  *
  * Only opaque IDs are included so recipients cannot see the sender's email
  * address or name in the delivered message source.

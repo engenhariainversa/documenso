@@ -1,6 +1,6 @@
 import { env } from '@documenso/lib/utils/env';
-import { AppError, AppErrorCode } from '../errors/app-error';
-import { SignatureLevel, type TSignatureLevel } from '../types/signature-level';
+
+import { APP_NAME, APP_SOURCE_URL } from './brand';
 
 export const APP_DOCUMENT_UPLOAD_SIZE_LIMIT = Number(env('NEXT_PUBLIC_DOCUMENT_SIZE_UPLOAD_LIMIT')) || 50;
 
@@ -45,18 +45,31 @@ export const formatPath = (path: string): string => {
 export const NEXT_PUBLIC_SIGNING_CONTACT_INFO = () =>
   env('NEXT_PUBLIC_SIGNING_CONTACT_INFO') ?? NEXT_PUBLIC_WEBAPP_URL();
 
+/**
+ * Optional links to this instance's own Terms of Service / Privacy Policy.
+ *
+ * Docverse has no Documenso-hosted legal pages, so these are unset by
+ * default. The signup form only shows the "By signing up you agree..."
+ * sentence when both are configured.
+ */
+export const NEXT_PUBLIC_TERMS_URL = () => env('NEXT_PUBLIC_TERMS_URL');
+export const NEXT_PUBLIC_PRIVACY_URL = () => env('NEXT_PUBLIC_PRIVACY_URL');
+
 export const NEXT_PRIVATE_USE_LEGACY_SIGNING_SUBFILTER = () =>
   env('NEXT_PRIVATE_USE_LEGACY_SIGNING_SUBFILTER') === 'true';
 
 export const NEXT_PRIVATE_INTERNAL_WEBAPP_URL = () =>
   env('NEXT_PRIVATE_INTERNAL_WEBAPP_URL') ?? NEXT_PUBLIC_WEBAPP_URL();
 
-export const IS_BILLING_ENABLED = () => env('NEXT_PUBLIC_FEATURE_BILLING_ENABLED') === 'true';
+/**
+ * Docverse has no billing. Kept as a function so upstream call sites stay untouched.
+ */
+export const IS_BILLING_ENABLED = () => false;
 
 /**
- * Whether this instance is Documenso Cloud (managed SaaS).
+ * Whether this instance is Docverse Cloud (managed SaaS).
  *
- * Used so we can show a different UI for Documenso Cloud and self-hosted instances since
+ * Used so we can show a different UI for Docverse Cloud and self-hosted instances since
  * there are things like billing, upsells, documenso links, etc that don't make sense for self-hosted instances.
  */
 export const IS_DOCUMENSO_CLOUD = () => env('NEXT_PUBLIC_IS_DOCUMENSO_CLOUD') === 'true';
@@ -64,7 +77,7 @@ export const IS_DOCUMENSO_CLOUD = () => env('NEXT_PUBLIC_IS_DOCUMENSO_CLOUD') ==
 export const API_V2_BETA_URL = '/api/v2-beta';
 export const API_V2_URL = '/api/v2';
 
-export const SUPPORT_EMAIL = env('NEXT_PUBLIC_SUPPORT_EMAIL') ?? 'support@documenso.com';
+export const SUPPORT_EMAIL = env('NEXT_PUBLIC_SUPPORT_EMAIL') ?? '';
 
 export const USE_INTERNAL_URL_BROWSERLESS = () => env('NEXT_PUBLIC_USE_INTERNAL_URL_BROWSERLESS') === 'true';
 
@@ -92,59 +105,20 @@ export const IS_AI_FEATURES_CONFIGURED = (): boolean => {
 export const NEXT_PRIVATE_USE_PLAYWRIGHT_PDF = () => env('NEXT_PRIVATE_USE_PLAYWRIGHT_PDF') === 'true';
 
 export const NEXT_PRIVATE_SIGNING_TIMESTAMP_AUTHORITY = () => env('NEXT_PRIVATE_SIGNING_TIMESTAMP_AUTHORITY');
-export const NEXT_PRIVATE_SIGNING_REASON = () => env('NEXT_PRIVATE_SIGNING_REASON') || 'Signed by Documenso';
+export const NEXT_PRIVATE_SIGNING_REASON = () => env('NEXT_PRIVATE_SIGNING_REASON') || `Signed by ${APP_NAME}`;
 
 export const NEXT_PRIVATE_SIGNING_TRANSPORT = () => env('NEXT_PRIVATE_SIGNING_TRANSPORT') || 'local';
 
 /**
- * Whether this Documenso instance is running in CSC (Cloud Signature Consortium) mode.
+ * Whether this Docverse instance is running in CSC (Cloud Signature Consortium) mode.
  *
- * CSC mode routes signing through a third-party Trust Service Provider for
- * Advanced and Qualified Electronic Signatures (AES/QES). It is instance-wide
- * and mutually exclusive with the other signing transports.
+ * CSC (remote TSP-backed AES/QES) signing was removed in this fork — every
+ * envelope now signs through the normal SES flow (see `signPdf` from
+ * `@documenso/signing`). Kept as a function (always `false`) rather than
+ * deleted outright so call sites that still branch on instance mode don't
+ * need to change; a future ICP-Brasil qualified-signature mode will replace
+ * this.
  */
-export const IS_INSTANCE_CSC_MODE = (): boolean => {
-  if (typeof window === 'undefined') {
-    return env('NEXT_PRIVATE_SIGNING_TRANSPORT') === 'csc';
-  }
+export const IS_INSTANCE_CSC_MODE = (): boolean => false;
 
-  return env('NEXT_PUBLIC_SIGNING_TRANSPORT_IS_CSC') === 'true';
-};
-
-/**
- * The default signature level applied to envelopes created on a CSC-mode
- * instance when the caller doesn't specify one (or asks for `SES` and the
- * resolver is in loose-coerce mode).
- *
- * Set via `NEXT_PRIVATE_SIGNING_CSC_SIGNATURE_LEVEL`; accepts `AES` or `QES`
- * only; defaults to `AES` when unset. An explicit `AES`/`QES` request on
- * envelope create still passes through unchanged — this constant only affects
- * the coerced default.
- *
- * Throws on an invalid value rather than silently falling back. A typo here
- * (e.g. `qes`) would otherwise silently downgrade qualified-tier instances
- * to advanced-tier, which has legal consequences.
- *
- * Only consulted on CSC-mode instances. Non-CSC instances always default to
- * `SES` regardless of this var.
- */
-export const CSC_INSTANCE_SIGNATURE_LEVEL = (): TSignatureLevel => {
-  // Cast through `string | undefined` because shells can deliver
-  // `NEXT_PRIVATE_SIGNING_CSC_SIGNATURE_LEVEL=` as an empty string at runtime
-  // — the typed env signature narrows to `'AES' | 'QES' | undefined` only.
-  const value = env('NEXT_PRIVATE_SIGNING_CSC_SIGNATURE_LEVEL');
-
-  if (!value) {
-    return SignatureLevel.AES;
-  }
-
-  if (value !== SignatureLevel.AES && value !== SignatureLevel.QES) {
-    throw new AppError(AppErrorCode.NOT_SETUP, {
-      message: `NEXT_PRIVATE_SIGNING_CSC_SIGNATURE_LEVEL must be '${SignatureLevel.AES}' or '${SignatureLevel.QES}', got '${value}'.`,
-    });
-  }
-
-  return value;
-};
-
-export const DOCUMENSO_CLOUD_ENTERPRISE_CTA_URL = 'https://documen.so/enterprise-cta';
+export const DOCUMENSO_CLOUD_ENTERPRISE_CTA_URL = APP_SOURCE_URL;

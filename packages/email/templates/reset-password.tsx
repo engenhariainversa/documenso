@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from '@documenso/lib/constants/app';
 import type { TPasswordChangeSource } from '@documenso/lib/jobs/definitions/emails/send-password-reset-success-email';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -55,30 +56,40 @@ export const ResetPasswordTemplate = ({
                   <Text className="mt-2 text-base text-muted-foreground">
                     <Trans>We've changed your password as you asked. You can now sign in with your new password.</Trans>
                   </Text>
-                  <Text className="mt-2 text-base text-muted-foreground">
-                    <Trans>
-                      Didn't request a password change? We are here to help you secure your account, just{' '}
-                      <Link className="font-normal text-primary" href="mailto:hi@documenso.com">
-                        contact us
-                      </Link>
-                      .
-                    </Trans>
-                  </Text>
+                  {SUPPORT_EMAIL && (
+                    <Text className="mt-2 text-base text-muted-foreground">
+                      <Trans>
+                        Didn't request a password change? We are here to help you secure your account, just{' '}
+                        <Link className="font-normal text-primary" href={`mailto:${SUPPORT_EMAIL}`}>
+                          contact us
+                        </Link>
+                        .
+                      </Trans>
+                    </Text>
+                  )}
                 </>
               ) : (
                 <>
                   <Text className="mt-2 text-base text-muted-foreground">
                     <Trans>Your password was just changed from your account security settings.</Trans>
                   </Text>
-                  <Text className="mt-2 text-base text-muted-foreground">
-                    <Trans>
-                      If this was you, no action is needed. If it wasn't, reset your password immediately and{' '}
-                      <Link className="font-normal text-primary" href="mailto:hi@documenso.com">
-                        contact us
-                      </Link>
-                      .
-                    </Trans>
-                  </Text>
+                  {SUPPORT_EMAIL ? (
+                    <Text className="mt-2 text-base text-muted-foreground">
+                      <Trans>
+                        If this was you, no action is needed. If it wasn't, reset your password immediately and{' '}
+                        <Link className="font-normal text-primary" href={`mailto:${SUPPORT_EMAIL}`}>
+                          contact us
+                        </Link>
+                        .
+                      </Trans>
+                    </Text>
+                  ) : (
+                    <Text className="mt-2 text-base text-muted-foreground">
+                      <Trans>
+                        If this was you, no action is needed. If it wasn't, reset your password immediately.
+                      </Trans>
+                    </Text>
+                  )}
                 </>
               )}
             </Section>

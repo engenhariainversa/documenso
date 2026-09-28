@@ -20,7 +20,6 @@ import { ADMIN_DELETE_ORGANISATION_JOB_DEFINITION } from './definitions/internal
 import { ALERT_ORGANISATION_SEAT_DRIFT_JOB_DEFINITION } from './definitions/internal/alert-organisation-seat-drift';
 import { BACKPORT_SUBSCRIPTION_CLAIM_JOB_DEFINITION } from './definitions/internal/backport-subscription-claims';
 import { BULK_SEND_TEMPLATE_JOB_DEFINITION } from './definitions/internal/bulk-send-template';
-import { CANCEL_ORGANISATION_SUBSCRIPTION_JOB_DEFINITION } from './definitions/internal/cancel-organisation-subscription';
 import { CLEANUP_RATE_LIMITS_JOB_DEFINITION } from './definitions/internal/cleanup-rate-limits';
 import { EXECUTE_WEBHOOK_JOB_DEFINITION } from './definitions/internal/execute-webhook';
 import { EXPIRE_RECIPIENTS_SWEEP_JOB_DEFINITION } from './definitions/internal/expire-recipients-sweep';
@@ -29,8 +28,6 @@ import { PROCESS_SIGNING_REMINDER_JOB_DEFINITION } from './definitions/internal/
 import { SEAL_DOCUMENT_JOB_DEFINITION } from './definitions/internal/seal-document';
 import { SEAL_DOCUMENT_SWEEP_JOB_DEFINITION } from './definitions/internal/seal-document-sweep';
 import { SEND_SIGNING_REMINDERS_SWEEP_JOB_DEFINITION } from './definitions/internal/send-signing-reminders-sweep';
-import { SYNC_EMAIL_DOMAINS_JOB_DEFINITION } from './definitions/internal/sync-email-domains';
-import { SYNC_ORGANISATION_SEATS_JOB_DEFINITION } from './definitions/internal/sync-organisation-seats';
 
 /**
  * The `as const` assertion is load bearing as it provides the correct level of type inference for
@@ -64,11 +61,8 @@ export const jobsClient = new JobClient([
   SEND_SIGNING_REMINDERS_SWEEP_JOB_DEFINITION,
   PROCESS_SIGNING_REMINDER_JOB_DEFINITION,
   CLEANUP_RATE_LIMITS_JOB_DEFINITION,
-  SYNC_EMAIL_DOMAINS_JOB_DEFINITION,
   ADMIN_DELETE_ORGANISATION_JOB_DEFINITION,
   ALERT_ORGANISATION_SEAT_DRIFT_JOB_DEFINITION,
-  CANCEL_ORGANISATION_SUBSCRIPTION_JOB_DEFINITION,
-  SYNC_ORGANISATION_SEATS_JOB_DEFINITION,
 ] as const);
 
 export const jobs = jobsClient;

@@ -1,8 +1,8 @@
-import { PAID_PLAN_LIMITS } from '@documenso/ee/server-only/limits/constants';
-import { LimitsProvider } from '@documenso/ee/server-only/limits/provider/client';
 import { useAnalytics } from '@documenso/lib/client-only/hooks/use-analytics';
+import { LimitsProvider } from '@documenso/lib/client-only/providers/limits';
 import { OrganisationProvider } from '@documenso/lib/client-only/providers/organisation';
 import { APP_I18N_OPTIONS } from '@documenso/lib/constants/i18n';
+import { UNLIMITED_LIMITS } from '@documenso/lib/constants/limits';
 import { verifyEmbeddingPresignToken } from '@documenso/lib/server-only/embedding-presign/verify-embedding-presign-token';
 import { getOrganisationClaimByTeamId } from '@documenso/lib/server-only/organisation/get-organisation-claims';
 import { getTeamSettings } from '@documenso/lib/server-only/team/get-team-settings';
@@ -146,8 +146,8 @@ export default function AuthoringLayout() {
           <LimitsProvider
             disableLimitsFetch={true}
             initialValue={{
-              quota: PAID_PLAN_LIMITS,
-              remaining: PAID_PLAN_LIMITS,
+              quota: UNLIMITED_LIMITS,
+              remaining: UNLIMITED_LIMITS,
               maximumEnvelopeItemCount: organisationClaim.envelopeItemCount,
             }}
             teamId={team.id}
@@ -190,12 +190,6 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
             <ul>
               <li>
                 <Trans>Ensure that you are using the embedding token, not the API token</Trans>
-              </li>
-              <li>
-                <Trans>
-                  If you are using staging, ensure that you have set the host prop on the embedding component to the
-                  staging domain (https://stg-app.documenso.com)
-                </Trans>
               </li>
             </ul>
           </div>

@@ -1,7 +1,7 @@
-import { useLimits } from '@documenso/ee/server-only/limits/provider/client';
 import { useDebouncedValue } from '@documenso/lib/client-only/hooks/use-debounced-value';
 import { ZEditorRecipientsFormSchema } from '@documenso/lib/client-only/hooks/use-editor-recipients';
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
+import { useLimits } from '@documenso/lib/client-only/providers/limits';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
 import type { TDetectedRecipientSchema } from '@documenso/lib/server-only/ai/envelope/detect-recipients/schema';

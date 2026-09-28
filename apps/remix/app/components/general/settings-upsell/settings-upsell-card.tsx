@@ -31,7 +31,7 @@ export type SettingsUpsellCardProps = {
 };
 
 /**
- * Shared split-card layout for claim-gated settings upsells on Documenso
+ * Shared split-card layout for claim-gated settings upsells on Docverse
  * Cloud. The left pane pitches the feature (plan badge, title, description,
  * feature list, upgrade CTA); the right pane renders a decorative scenario
  * preview supplied by the caller.

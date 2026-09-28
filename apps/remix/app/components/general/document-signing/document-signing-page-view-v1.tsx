@@ -43,6 +43,7 @@ import { DocumentSigningRejectDialog } from '~/components/general/document-signi
 import { DocumentSigningSignatureField } from '~/components/general/document-signing/document-signing-signature-field';
 import { DocumentSigningTextField } from '~/components/general/document-signing/document-signing-text-field';
 import PDFViewerLazy from '~/components/general/pdf-viewer/pdf-viewer-lazy';
+import { SourceCodeLink } from '~/components/general/source-code-link';
 
 import { useRequiredDocumentSigningAuthContext } from './document-signing-auth-provider';
 import { DocumentSigningCompleteDialog } from './document-signing-complete-dialog';
@@ -450,6 +451,10 @@ export const DocumentSigningPageViewV1 = ({
                 .otherwise(() => null),
             )}
         </ElementVisible>
+
+        <div className="mt-8 flex justify-end">
+          <SourceCodeLink />
+        </div>
       </div>
     </DocumentSigningRecipientProvider>
   );
