@@ -1,7 +1,7 @@
-import { DEFAULT_MINIMUM_ENVELOPE_ITEM_COUNT, PAID_PLAN_LIMITS } from '@documenso/ee/server-only/limits/constants';
-import { LimitsProvider } from '@documenso/ee/server-only/limits/provider/client';
 import { useChildRouteFlags } from '@documenso/lib/client-only/hooks/use-child-route-flags';
+import { LimitsProvider } from '@documenso/lib/client-only/providers/limits';
 import { useOptionalCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
+import { DEFAULT_MINIMUM_ENVELOPE_ITEM_COUNT, UNLIMITED_LIMITS } from '@documenso/lib/constants/limits';
 import { isOrganisationPendingPayment } from '@documenso/lib/utils/billing';
 import { TrpcProvider } from '@documenso/trpc/react';
 import { cn } from '@documenso/ui/lib/utils';
@@ -47,8 +47,8 @@ export default function Layout() {
     }
 
     return {
-      quota: PAID_PLAN_LIMITS,
-      remaining: PAID_PLAN_LIMITS,
+      quota: UNLIMITED_LIMITS,
+      remaining: UNLIMITED_LIMITS,
       maximumEnvelopeItemCount: DEFAULT_MINIMUM_ENVELOPE_ITEM_COUNT,
     };
   }, [organisation]);

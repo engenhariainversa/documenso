@@ -1,7 +1,7 @@
-import { getServerLimits } from '@documenso/ee/server-only/limits/server';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { convertToPdf } from '@documenso/lib/server-only/document-conversion';
 import { createEnvelope } from '@documenso/lib/server-only/envelope/create-envelope';
+import { getServerLimits } from '@documenso/lib/server-only/limits/get-server-limits';
 import { extractPdfPlaceholders } from '@documenso/lib/server-only/pdf/auto-place-fields';
 import { normalizePdf } from '@documenso/lib/server-only/pdf/normalize-pdf';
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
