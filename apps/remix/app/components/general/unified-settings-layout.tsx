@@ -118,7 +118,6 @@ export const UnifiedSettingsLayout = ({ activeScope, preferredTeamUrl = null }: 
       ? {
           url: organisation.url,
           currentOrganisationRole: organisation.currentOrganisationRole,
-          organisationClaim: organisation.organisationClaim,
         }
       : null,
     team: teamForSidebar ? { url: teamForSidebar.url, currentTeamRole: teamForSidebar.currentTeamRole } : null,

@@ -7,17 +7,14 @@ import {
   Globe2Icon,
   GroupIcon,
   LockIcon,
-  MailboxIcon,
   Settings2Icon,
   SettingsIcon,
-  ShieldCheckIcon,
   UserIcon,
   Users2Icon,
   WebhookIcon,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { FaUsers } from 'react-icons/fa6';
-import { IS_BILLING_ENABLED, IS_DOCUMENSO_CLOUD } from '../constants/app';
 import { canExecuteOrganisationAction } from './organisations';
 import { canExecuteTeamAction } from './teams';
 
@@ -47,7 +44,6 @@ export type GetSettingsNavGroupsArgs = {
   organisation: {
     url: string;
     currentOrganisationRole: OrganisationMemberRole;
-    organisationClaim: { flags: { emailDomains?: boolean; authenticationPortal?: boolean } };
   } | null;
   team: {
     url: string;
@@ -71,9 +67,6 @@ export const getSettingsNavGroups = ({
   team,
   hasManageableBillingOrgs,
 }: GetSettingsNavGroupsArgs): SettingsNavGroups => {
-  const isBillingEnabled = IS_BILLING_ENABLED();
-  const isDocumensoCloud = IS_DOCUMENSO_CLOUD();
-
   const canManageOrg =
     organisation !== null && canExecuteOrganisationAction('MANAGE_ORGANISATION', organisation.currentOrganisationRole);
 
@@ -126,16 +119,6 @@ export const getSettingsNavGroups = ({
             label: msg`Certificates`,
             isSubNav: true,
           },
-          ...((isBillingEnabled && organisation.organisationClaim.flags.emailDomains) || isDocumensoCloud
-            ? [
-                {
-                  key: 'email-domains',
-                  path: `/o/${organisation.url}/settings/email-domains`,
-                  label: msg`Email Domains`,
-                  icon: MailboxIcon,
-                },
-              ]
-            : []),
           {
             key: 'teams',
             path: `/o/${organisation.url}/settings/teams`,
@@ -154,16 +137,6 @@ export const getSettingsNavGroups = ({
             label: msg`Groups`,
             icon: GroupIcon,
           },
-          ...((isBillingEnabled && organisation.organisationClaim.flags.authenticationPortal) || isDocumensoCloud
-            ? [
-                {
-                  key: 'sso',
-                  path: `/o/${organisation.url}/settings/sso`,
-                  label: msg`SSO`,
-                  icon: ShieldCheckIcon,
-                },
-              ]
-            : []),
         ],
       }
     : null;

@@ -31,7 +31,6 @@ import { getAdminTeamRoute } from './get-admin-team';
 import { getEmailDomainRoute } from './get-email-domain';
 import { getUserRoute } from './get-user';
 import { promoteMemberToOwnerRoute } from './promote-member-to-owner';
-import { reregisterEmailDomainRoute } from './reregister-email-domain';
 import { resealDocumentRoute } from './reseal-document';
 import { resetOrganisationMonthlyStatRoute } from './reset-organisation-monthly-stat';
 import { resetTwoFactorRoute } from './reset-two-factor-authentication';
@@ -98,7 +97,6 @@ export const adminRouter = router({
   emailDomain: {
     find: findEmailDomainsRoute,
     get: getEmailDomainRoute,
-    reregister: reregisterEmailDomainRoute,
   },
   emailTransport: {
     find: findEmailTransportsRoute,
