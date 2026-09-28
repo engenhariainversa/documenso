@@ -24,12 +24,14 @@
 
 ```bash
 cd /mnt/hd2tb/projetos/documenso/repo
+(cd apps/remix && npx react-router typegen >/dev/null 2>&1)
 for p in packages/lib packages/trpc packages/ui packages/auth packages/email packages/api apps/remix; do
-  echo "== $p"; npx tsc --noEmit -p $p 2>&1 | grep -v "^$" | head -30
-done
+  echo "== $p"; npx tsc --noEmit -p $p 2>&1 | grep "error TS"
+done > ../tsc-now.txt 2>&1
+diff <(grep "error TS" ../tsc-baseline.txt | sort) <(grep "error TS" ../tsc-now.txt | sort)
 ```
 
-Antes da Task 1, rode esse comando uma vez e salve a saída em `../tsc-baseline.txt` — erros que já existiam no upstream não contam como regressão.
+O baseline já está salvo em `../tsc-baseline.txt` (7 erros pré-existentes do upstream, em `packages/lib` e `packages/api/v1/examples`). Linhas `>` no diff são erros novos (regressão); linhas `<` são erros que sumiram (ok, ex.: `find-organisation-invoices.ts` apagado).
 
 ---
 
