@@ -4,7 +4,6 @@ import type { OrganisationMemberRole, TeamMemberRole } from '@prisma/client';
 import {
   BracesIcon,
   Building2Icon,
-  CreditCardIcon,
   Globe2Icon,
   GroupIcon,
   LockIcon,
@@ -165,16 +164,6 @@ export const getSettingsNavGroups = ({
                 },
               ]
             : []),
-          ...(isBillingEnabled
-            ? [
-                {
-                  key: 'billing',
-                  path: `/o/${organisation.url}/settings/billing`,
-                  label: msg`Billing`,
-                  icon: CreditCardIcon,
-                },
-              ]
-            : []),
         ],
       }
     : null;
@@ -282,16 +271,6 @@ export const getSettingsNavGroups = ({
         label: msg`Security`,
         icon: LockIcon,
       },
-      ...(IS_BILLING_ENABLED() && hasManageableBillingOrgs
-        ? [
-            {
-              key: 'billing',
-              path: '/settings/billing',
-              label: msg`Billing`,
-              icon: CreditCardIcon,
-            },
-          ]
-        : []),
     ],
   };
 

@@ -51,7 +51,10 @@ export const NEXT_PRIVATE_USE_LEGACY_SIGNING_SUBFILTER = () =>
 export const NEXT_PRIVATE_INTERNAL_WEBAPP_URL = () =>
   env('NEXT_PRIVATE_INTERNAL_WEBAPP_URL') ?? NEXT_PUBLIC_WEBAPP_URL();
 
-export const IS_BILLING_ENABLED = () => env('NEXT_PUBLIC_FEATURE_BILLING_ENABLED') === 'true';
+/**
+ * Docverse has no billing. Kept as a function so upstream call sites stay untouched.
+ */
+export const IS_BILLING_ENABLED = () => false;
 
 /**
  * Whether this instance is Documenso Cloud (managed SaaS).
