@@ -1,0 +1,61 @@
+# Docverse — produção no servidor próprio (jarvis), atrás do proxy nginx + Cloudflare Tunnel.
+# Uso (a partir da raiz do repositório):
+#   docker compose -f docker/docverse/compose.yml --profile prod up -d --build
+# Variáveis: ../../.env.prod (não versionado). Certificado de selagem: ../../../secrets/cert.p12.
+# Spec: docs/superpowers/specs/2026-09-28-docverse-deploy-design.md
+name: docverse
+
+services:
+  database:
+    profiles: [prod]
+    image: postgres:16-alpine
+    container_name: docverse-db
+    restart: unless-stopped
+    env_file: ../../.env.prod
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - docverse-db:/var/lib/postgresql/data
+
+  # SMTP provisório: segura os e-mails até termos um provedor real (ver spec, "Pendências").
+  mailpit:
+    profiles: [prod]
+    image: axllent/mailpit:latest
+    container_name: docverse-mailpit
+    restart: unless-stopped
+    volumes:
+      - docverse-mail:/data
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: 5000
+
+  app:
+    profiles: [prod]
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile
+    image: docverse:latest
+    container_name: docverse-app
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    env_file: ../../.env.prod
+    volumes:
+      - ../../../secrets/cert.p12:/opt/docverse/cert.p12:ro
+    networks:
+      - default
+      - proxy
+
+volumes:
+  docverse-db:
+  docverse-mail:
+
+networks:
+  proxy:
+    external: true
