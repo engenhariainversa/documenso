@@ -59,7 +59,7 @@ export const sendForgotPassword = async ({ userId }: SendForgotPasswordOptions) 
     },
     from: {
       name: env('NEXT_PRIVATE_SMTP_FROM_NAME') || APP_NAME,
-      address: env('NEXT_PRIVATE_SMTP_FROM_ADDRESS') || 'noreply@documenso.com',
+      address: env('NEXT_PRIVATE_SMTP_FROM_ADDRESS') || 'noreply@example.com',
     },
     subject: i18n._(msg`Forgot Password?`),
     html,
