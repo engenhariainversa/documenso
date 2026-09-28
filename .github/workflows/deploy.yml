@@ -1,25 +1,46 @@
-name: Deploy to Production
+name: Deploy (self-hosted)
 
 on:
   push:
-    tags:
-      - '*'
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-
+    runs-on: [self-hosted, jarvis-docverse]
+    timeout-minutes: 45
+    env:
+      DEPLOY_DIR: /mnt/hd2tb/projetos/documenso/prod
+      COMPOSE: docker compose -f docker/docverse/compose.yml --profile prod
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
-
-      - name: Push to release branch
+      - name: Atualizar codigo no diretorio de producao
         run: |
-          git checkout release || git checkout -b release
-          git merge --ff-only main
-          git push origin release
+          cd "$DEPLOY_DIR"
+          git fetch "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" main
+          git checkout -q main
+          git merge --ff-only FETCH_HEAD
+          git log --oneline -1
+
+      - name: Build e subir containers
+        run: |
+          cd "$DEPLOY_DIR"
+          $COMPOSE up -d --build --remove-orphans
+
+      - name: Health check
+        run: |
+          cd "$DEPLOY_DIR"
+          for i in $(seq 1 60); do
+            if $COMPOSE exec -T app node -e "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
+              echo "app respondendo"; exit 0
+            fi
+            sleep 3
+          done
+          echo "app nao respondeu em 180s"; $COMPOSE logs --tail=80 app; exit 1
+
+      - name: Limpar imagens antigas
+        if: success()
+        run: docker image prune -f
