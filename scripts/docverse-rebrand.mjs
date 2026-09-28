@@ -1,17 +1,16 @@
 #!/usr/bin/env node
+import { execSync } from 'node:child_process';
 // Replaces the visible "Documenso" brand with "Docverse" in UI/email source
 // strings and in every Lingui catalogue (msgid + msgstr), so existing
 // translations keep matching. Package names (@documenso/*), env vars,
 // the X-Documenso-Secret header and code identifiers are left untouched.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { execSync } from 'node:child_process';
 
 const roots = ['apps/remix/app', 'packages/email', 'packages/ui', 'packages/lib', 'packages/trpc'];
 
-const files = execSync(
-  `grep -rla "Documenso" ${roots.join(' ')} --include=*.ts --include=*.tsx --include=*.po`,
-  { encoding: 'utf8' },
-)
+const files = execSync(`grep -rla "Documenso" ${roots.join(' ')} --include=*.ts --include=*.tsx --include=*.po`, {
+  encoding: 'utf8',
+})
   .split('\n')
   .filter(Boolean)
   .filter((file) => !file.endsWith('.test.ts'));
