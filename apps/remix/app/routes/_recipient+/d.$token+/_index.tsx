@@ -24,6 +24,7 @@ import { DocumentSigningPageViewV2 } from '~/components/general/document-signing
 import { DocumentSigningProvider } from '~/components/general/document-signing/document-signing-provider';
 import { EnvelopeSigningProvider } from '~/components/general/document-signing/envelope-signing-provider';
 import { RecipientBranding } from '~/components/general/recipient-branding';
+import { SourceCodeLink } from '~/components/general/source-code-link';
 import { useCspNonce } from '~/utils/nonce';
 import { superLoaderJson, useSuperLoaderData } from '~/utils/super-json-loader';
 
@@ -244,6 +245,10 @@ const DirectSigningPageV1 = ({ data }: { data: Awaited<ReturnType<typeof handleV
             directTemplateToken={template.directLink.token}
             template={template}
           />
+
+          <div className="mt-8 flex justify-end">
+            <SourceCodeLink />
+          </div>
         </div>
       </DocumentSigningAuthProvider>
     </DocumentSigningProvider>
