@@ -9,6 +9,7 @@ import {
 import { PREFERRED_TEAM_URL_COOKIE } from '@documenso/lib/constants/cookies';
 import { getTeams } from '@documenso/lib/server-only/team/get-teams';
 import { DEFAULT_LANDING_LANGUAGE, resolveLandingLanguage } from '@documenso/lib/utils/landing-language';
+import { isLandingPricingVisible } from '@documenso/lib/utils/landing-pricing';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { ZTeamUrlSchema } from '@documenso/trpc/server/team-router/schema';
 import { redirect } from 'react-router';
@@ -83,11 +84,12 @@ export async function loader({ request }: Route.LoaderArgs) {
       acceptLanguage: request.headers.get('accept-language'),
     }),
     isSignupEnabled,
+    isPricingVisible: isLandingPricingVisible(),
   };
 }
 
 export default function Index({ loaderData }: Route.ComponentProps) {
-  const { lang, isSignupEnabled } = loaderData;
+  const { lang, isSignupEnabled, isPricingVisible } = loaderData;
 
-  return <LandingPage lang={lang} isSignupEnabled={isSignupEnabled} />;
+  return <LandingPage lang={lang} isSignupEnabled={isSignupEnabled} isPricingVisible={isPricingVisible} />;
 }
