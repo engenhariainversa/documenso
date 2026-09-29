@@ -4,6 +4,7 @@ import {
   handleOpapingouWebhook,
 } from '@documenso/lib/server-only/cloud-billing/handle-webhook';
 import { OPAPINGOU_SIGNATURE_HEADER } from '@documenso/lib/server-only/cloud-billing/providers/opapingou/opapingou-webhook';
+import { readRequestBodyWithLimit } from '@documenso/lib/server-only/cloud-billing/read-request-body';
 import { createRateLimitMiddleware } from '@documenso/lib/server-only/rate-limit/rate-limit-middleware';
 import { cloudBillingWebhookRateLimit } from '@documenso/lib/server-only/rate-limit/rate-limits';
 import { Hono } from 'hono';
@@ -32,14 +33,19 @@ export const billingWebhookRoute = new Hono<HonoEnv>()
   .post('/webhook', async (c) => {
     const logger = c.get('logger');
 
-    const contentLength = Number(c.req.header('content-length') ?? 0);
-
-    if (Number.isFinite(contentLength) && contentLength > CLOUD_BILLING_WEBHOOK_MAX_BODY_BYTES) {
-      return c.json({ outcome: 'BODY_TOO_LARGE' }, 413);
-    }
-
     try {
-      const rawBody = await c.req.text();
+      // Read from the stream with a cap: a body sent without a declared length
+      // must not be held in memory beyond the limit.
+      const rawBody = await readRequestBodyWithLimit({
+        request: c.req.raw,
+        maxBytes: CLOUD_BILLING_WEBHOOK_MAX_BODY_BYTES,
+      });
+
+      if (rawBody === null) {
+        logger.info({ outcome: 'BODY_TOO_LARGE' }, 'Cloud billing webhook handled');
+
+        return c.json({ outcome: 'BODY_TOO_LARGE' }, 413);
+      }
 
       const { status, outcome, eventId, chargeId } = await handleOpapingouWebhook({
         rawBody,

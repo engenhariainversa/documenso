@@ -15,6 +15,7 @@ import { createElement } from 'react';
 import { getI18nInstance } from '../../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../../constants/app';
 import { RECIPIENT_ROLES_DESCRIPTION } from '../../../constants/recipient-roles';
+import { isOrganisationSendingAllowed } from '../../../server-only/cloud-billing/assert-organisation-can-send';
 import { buildEnvelopeEmailHeaders } from '../../../server-only/email/build-envelope-email-headers';
 import { getEmailContext } from '../../../server-only/email/get-email-context';
 import { assertOrganisationRatesAndLimits } from '../../../server-only/rate-limit/assert-organisation-rates-and-limits';
@@ -125,6 +126,13 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
   // has email sending disabled.
   if (envelope.user.disabled || emailsDisabled) {
     io.logger.info(`Envelope ${envelope.id} skipping reminder: owner disabled or organisation emails disabled`);
+    return;
+  }
+
+  // Docverse Cloud: a reminder is an email sent on behalf of the organisation, so it
+  // follows the same rule as resending. No-op when billing is disabled.
+  if (!(await isOrganisationSendingAllowed({ teamId: envelope.teamId }))) {
+    io.logger.info(`Envelope ${envelope.id} skipping reminder: organisation has no active plan`);
     return;
   }
 

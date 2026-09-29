@@ -161,6 +161,57 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
     expect(second.id).not.toBe(first.id);
   });
 
+  it('replaces the pending charge when asked for a new one', async () => {
+    const first = await createCloudSubscriptionCheckout({ organisationId, userId, now: NOW });
+
+    const second = await createCloudSubscriptionCheckout({ organisationId, userId, now: NOW, isReplacement: true });
+
+    const replaced = await prisma.cloudSubscriptionCharge.findUniqueOrThrow({ where: { id: first.id } });
+
+    expect(second.id).not.toBe(first.id);
+    expect(replaced.status).toBe(CloudSubscriptionChargeStatus.EXPIRED);
+    expect(api.requests).toHaveLength(2);
+  });
+
+  it('keeps a single pending charge after a replacement', async () => {
+    await createCloudSubscriptionCheckout({ organisationId, userId, now: NOW });
+    await createCloudSubscriptionCheckout({ organisationId, userId, now: NOW, isReplacement: true });
+
+    const pendingCount = await prisma.cloudSubscriptionCharge.count({
+      where: { organisationId, status: CloudSubscriptionChargeStatus.PENDING },
+    });
+
+    expect(pendingCount).toBe(1);
+  });
+
+  it('creates a charge when asked for a replacement and there is nothing to replace', async () => {
+    const checkout = await createCloudSubscriptionCheckout({ organisationId, userId, now: NOW, isReplacement: true });
+
+    expect(checkout.paymentUrl).not.toBeNull();
+    expect(api.requests).toHaveLength(1);
+  });
+
+  it('rejects the second of two racing checkouts as already in progress', async () => {
+    const results = await Promise.allSettled([
+      createCloudSubscriptionCheckout({ organisationId, userId, now: NOW }),
+      createCloudSubscriptionCheckout({ organisationId, userId, now: NOW }),
+    ]);
+
+    const rejected = results.filter((result) => result.status === 'rejected');
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+
+    // Either the second call waited and got the same charge, or it was refused.
+    expect(fulfilled.length + rejected.length).toBe(2);
+
+    for (const result of rejected) {
+      expect(AppError.parseError(result.reason).code).toBe(AppErrorCode.ALREADY_EXISTS);
+    }
+
+    const ids = new Set(fulfilled.map((result) => result.value.id));
+
+    expect(ids.size).toBe(1);
+  });
+
   it('never reuses a charge from another organisation', async () => {
     const other = await createTestOrganisation();
 

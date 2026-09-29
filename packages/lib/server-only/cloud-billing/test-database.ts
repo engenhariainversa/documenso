@@ -62,7 +62,7 @@ export const resetCloudBillingForOrganisations = async (organisationIds: string[
         },
         ...organisationIds.map((organisationId) => ({
           eventId: {
-            startsWith: `${organisationId}:`,
+            contains: `:${organisationId}:`,
           },
         })),
       ],

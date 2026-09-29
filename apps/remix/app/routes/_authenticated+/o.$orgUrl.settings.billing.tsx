@@ -4,6 +4,7 @@ import { useSession } from '@documenso/lib/client-only/providers/session';
 import { IS_CLOUD_BILLING_ENABLED } from '@documenso/lib/constants/cloud-billing';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { formatCentsAsCurrency } from '@documenso/lib/universal/cloud-billing/money';
+import { isPaymentConfirmed } from '@documenso/lib/universal/cloud-billing/payment-confirmation';
 import type { TCloudSubscriptionState } from '@documenso/lib/universal/cloud-billing/subscription-state';
 import { canExecuteOrganisationAction } from '@documenso/lib/utils/organisations';
 import { trpc } from '@documenso/trpc/react';
@@ -16,7 +17,7 @@ import type { MessageDescriptor } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import { CheckIcon, CopyIcon, ExternalLinkIcon, Loader } from 'lucide-react';
+import { CheckIcon, CopyIcon, ExternalLinkIcon, LoaderIcon } from 'lucide-react';
 import { match } from 'ts-pattern';
 
 import { GenericErrorLayout } from '~/components/general/generic-error-layout';
@@ -54,11 +55,9 @@ export default function OrganisationSettingsBillingPage() {
 
   const { mutateAsync: createCheckout, isPending: isCreatingCheckout } = trpc.billing.createCheckout.useMutation();
 
-  const onSubscribeClick = async () => {
+  const onCheckoutClick = async ({ isReplacement }: { isReplacement: boolean }) => {
     try {
-      await createCheckout({ organisationId: organisation.id });
-
-      await refetchSubscription();
+      await createCheckout({ organisationId: organisation.id, isReplacement });
     } catch (err) {
       const error = AppError.parseError(err);
 
@@ -73,12 +72,22 @@ export default function OrganisationSettingsBillingPage() {
         variant: 'destructive',
       });
     }
+
+    // Also after a failure: the payment being prepared may be ready by now.
+    await refetchSubscription();
   };
 
   const onPaidClick = async () => {
+    if (!subscription) {
+      return;
+    }
+
     const { data } = await refetchSubscription();
 
-    if (data?.state === 'ACTIVE') {
+    // The state of the plan is not enough, an early renewal is already active.
+    const isConfirmed = data !== undefined && isPaymentConfirmed({ before: subscription, after: data });
+
+    if (isConfirmed) {
       // The session carries the subscription used by the rest of the app.
       await refreshSession();
 
@@ -114,7 +123,7 @@ export default function OrganisationSettingsBillingPage() {
   if (isLoadingSubscription || !subscription) {
     return (
       <div className="flex items-center justify-center rounded-lg py-32">
-        <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
+        <LoaderIcon className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -162,7 +171,7 @@ export default function OrganisationSettingsBillingPage() {
               className="mt-6"
               loading={isCreatingCheckout}
               disabled={!isProviderConfigured}
-              onClick={() => void onSubscribeClick()}
+              onClick={() => void onCheckoutClick({ isReplacement: false })}
             >
               {isRenewal ? <Trans>Renew for one month</Trans> : <Trans>Subscribe</Trans>}
             </Button>
@@ -179,7 +188,9 @@ export default function OrganisationSettingsBillingPage() {
           <PendingChargeCard
             charge={pendingCharge}
             isChecking={isRefetchingSubscription}
+            isReplacing={isCreatingCheckout}
             onPaidClick={() => void onPaidClick()}
+            onReplaceClick={() => void onCheckoutClick({ isReplacement: true })}
           />
         )}
 
@@ -230,10 +241,18 @@ const SubscriptionStateDescription = ({ state, periodEnd }: SubscriptionStateDes
 type PendingChargeCardProps = {
   charge: NonNullable<TGetSubscriptionResponse['pendingCharge']>;
   isChecking: boolean;
+  isReplacing: boolean;
   onPaidClick: () => void;
+  onReplaceClick: () => void;
 };
 
-const PendingChargeCard = ({ charge, isChecking, onPaidClick }: PendingChargeCardProps) => {
+const PendingChargeCard = ({
+  charge,
+  isChecking,
+  isReplacing,
+  onPaidClick,
+  onReplaceClick,
+}: PendingChargeCardProps) => {
   const { _, i18n } = useLingui();
   const { toast } = useToast();
 
@@ -307,10 +326,18 @@ const PendingChargeCard = ({ charge, isChecking, onPaidClick }: PendingChargeCar
             </Button>
           )}
 
-          <Button variant="secondary" loading={isChecking} onClick={onPaidClick}>
+          <Button variant="secondary" loading={isChecking} disabled={isReplacing} onClick={onPaidClick}>
             <Trans>I have paid</Trans>
           </Button>
+
+          <Button variant="ghost" loading={isReplacing} disabled={isChecking} onClick={onReplaceClick}>
+            <Trans>Generate a new code</Trans>
+          </Button>
         </div>
+
+        <p className="text-xs">
+          <Trans>If the code no longer works, generate a new one. Pay only one of them.</Trans>
+        </p>
       </AlertDescription>
     </Alert>
   );

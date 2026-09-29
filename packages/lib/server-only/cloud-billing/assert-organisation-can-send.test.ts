@@ -19,6 +19,8 @@ import { AppError } from '../../errors/app-error';
 import {
   assertOrganisationCanSendDocuments,
   assertSendingAllowed,
+  isDirectTemplateAvailable,
+  isOrganisationSendingAllowed,
   SUBSCRIPTION_REQUIRED_ERROR_CODE,
 } from './assert-organisation-can-send';
 
@@ -56,6 +58,20 @@ describe('assertOrganisationCanSendDocuments with billing disabled', () => {
 
     await expect(assertOrganisationCanSendDocuments({ teamId: 1 })).resolves.toBeUndefined();
 
+    expect(databaseCalls).toEqual([]);
+  });
+
+  it('reports sending as allowed without touching the database', async () => {
+    vi.stubEnv('NEXT_PUBLIC_CLOUD_BILLING_ENABLED', '');
+
+    expect(await isOrganisationSendingAllowed({ teamId: 1 })).toBe(true);
+    expect(databaseCalls).toEqual([]);
+  });
+
+  it('reports a direct template as available without touching the database', async () => {
+    vi.stubEnv('NEXT_PUBLIC_CLOUD_BILLING_ENABLED', '');
+
+    expect(await isDirectTemplateAvailable({ token: 'any-token' })).toBe(true);
     expect(databaseCalls).toEqual([]);
   });
 });

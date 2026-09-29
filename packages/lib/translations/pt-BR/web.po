@@ -15475,3 +15475,11 @@ msgstr "Seu plano venceu. Você pode criar documentos, mas não enviá-los."
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
 msgid "Your plan is active until {periodEnd}."
 msgstr "Seu plano está ativo até {periodEnd}."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Generate a new code"
+msgstr "Gerar novo código"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "If the code no longer works, generate a new one. Pay only one of them."
+msgstr "Se o código não funcionar mais, gere um novo. Pague apenas um deles."

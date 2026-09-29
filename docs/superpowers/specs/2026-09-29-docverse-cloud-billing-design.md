@@ -34,6 +34,7 @@ Premissas adicionais que este desenho precisou assumir e que também pedem confi
 | P7 | **Tolerância de 3 dias** depois do vencimento antes de bloquear o envio | a renovação é manual (Pix); sem tolerância o serviço corta no minuto do vencimento |
 | P8 | Documentos já enviados **continuam assináveis** com a assinatura vencida | bloquear o signatário puniria terceiros |
 | P9 | Link de modelo direto (direct template) fica bloqueado sem assinatura | ele cria e envia um documento em nome da organização |
+| P10 | **Lembretes automáticos** de assinatura também param sem assinatura ativa | é o mesmo tipo de e-mail do reenvio (P6); sem isso a organização vencida continuaria disparando e-mails |
 
 ## O que a API do Opa Pingou oferece (pesquisa em 2026-09-29)
 
@@ -226,6 +227,13 @@ Tempo limite de 10 segundos. Erros viram `AppError` sem ecoar a chave nem o corp
 | Algoritmo | HMAC-SHA256 do corpo bruto, em hexadecimal, com prefixo `sha256=` opcional | **presumido** |
 | Evento de pagamento | `evento: "pingou"` | nome publicado, formato **presumido** |
 | Corpo | `{ id, evento, cobranca: { id, referencia, valor, status } }` | **presumido** |
+| Cobrança paga | `cobranca.status: "pingou"` | **presumido** |
+| `valor` do webhook | valor bruto cobrado | **desconhecido**: pode ser líquido da `taxa` |
+
+Duas defesas contra suposições erradas, porque o erro seria silencioso:
+
+- **O nome do evento não basta para ativar.** O único exemplo publicado mostra `"status": "pingou"` na resposta da criação da cobrança. Se o provedor também avisar cobrança emitida com o evento `pingou`, o nome sozinho ativaria a assinatura sem pagamento. Por isso, quando `cobranca.status` vem no evento, ele precisa dizer que a cobrança foi paga.
+- **A chave de deduplicação inclui o tipo do evento** (`<evento>:<id>`). Se o `id` do provedor for o da cobrança, e não o do evento, um aviso anterior de outro tipo consumiria a chave e o pagamento seria tratado como repetido.
 
 A comparação usa `crypto.timingSafeEqual`. Sem segredo configurado, a verificação sempre falha.
 
@@ -236,6 +244,8 @@ A comparação usa `crypto.timingSafeEqual`. Sem segredo configurado, a verifica
 1. Exige cobrança ligada e chave configurada.
 2. Marca como `EXPIRED` as cobranças pendentes já vencidas da organização.
 3. Se existe cobrança `PENDING` válida, criada há menos de 24 horas, **devolve a mesma** (clicar duas vezes não gera duas cobranças).
+   - Exceção: com `isReplacement`, a cobrança pendente é marcada `EXPIRED` e uma nova é criada. É a saída para quando o código Pix deixou de funcionar. Se a cobrança substituída acabar sendo paga, o pagamento é aceito.
+   - Dois checkouts simultâneos da mesma organização são serializados por uma trava (`pg_advisory_xact_lock`). O segundo recebe "já existe um pagamento sendo preparado".
 4. Senão, cria a linha `PENDING`, chama o provedor com `reference = id da linha` e grava o retorno. Se o provedor falhar, a linha é apagada e o erro sobe.
 
 Rotas tRPC (`packages/trpc/server/billing-router/`), as duas restritas a quem tem `MANAGE_BILLING` (administradores da organização):
@@ -250,7 +260,7 @@ Rotas tRPC (`packages/trpc/server/billing-router/`), as duas restritas a quem te
 Ordem das verificações:
 
 1. Cobrança desligada → 404.
-2. Corpo maior que 64 KB → 413.
+2. Corpo maior que 64 KB → 413. O corpo é lido do stream com corte, então um envio sem tamanho declarado também para no limite.
 3. Assinatura ausente ou inválida → 401. Nada é gravado.
 4. JSON inválido ou fora do formato → 400.
 5. Evento que não é de pagamento → 200, gravado como `IGNORED_EVENT_TYPE`.
@@ -281,9 +291,14 @@ Trava no servidor, `assertOrganisationCanSendDocuments({ teamId })`, chamada em:
 
 - `sendDocument` (cobre distribuir, usar modelo com envio, envio em massa e API v1/v2);
 - `resendDocument`;
-- `createDocumentFromDirectTemplate`, logo no início, para o signatário externo não preencher um documento que vai falhar no fim.
+- `createDocumentFromDirectTemplate`, como última barreira;
+- os loaders das páginas de modelo direto (`/d/:token` e o embed), que respondem "não encontrado" **antes** de mostrar o formulário, para o signatário externo não preencher um documento que vai falhar no fim;
+- "usar modelo e enviar" e envio em massa, **antes** de criar o rascunho, para não deixar documento criado e não enviado;
+- o job de lembrete de assinatura, que pula o envio (P10).
 
 Lança `AppError('SUBSCRIPTION_REQUIRED')` com status 402. Com a cobrança desligada, retorna sem consultar o banco.
+
+Como o erro chega a quem integra: 402 no tRPC e na API v2. Na API v1, que está descontinuada e cujo contrato não declara 402, chega como 400 com a mensagem preservada.
 
 Interface:
 
@@ -299,7 +314,9 @@ Conteúdo:
 - nome do plano, preço (R$ 99,90 por mês) e o que inclui;
 - estado atual, com a data de validade;
 - botão "Assinar" ou "Renovar";
-- com cobrança pendente: link de pagamento, código Pix copia e cola com botão de copiar, e botão "Já paguei" que consulta o estado de novo.
+- com cobrança pendente: link de pagamento, código Pix copia e cola com botão de copiar, botão "Já paguei" e botão "Gerar novo código".
+
+"Já paguei" só confirma quando o período pago **avançou**. O estado do plano não serve de critério: quem renova antes do vencimento já está ativo, tenha pago ou não.
 
 O caminho `/settings/billing` é o mesmo que os links residuais do upstream já usam.
 
@@ -330,11 +347,13 @@ Nenhum teste chama a API real.
 
 ## O que falta para ligar a cobrança
 
-1. Confirmar as premissas P1 a P9.
-2. Obter do Opa Pingou a documentação da API e conferir cada item marcado como presumido nas tabelas da seção 4.
+1. Confirmar as premissas P1 a P10.
+2. Obter do Opa Pingou a documentação da API e conferir cada item marcado como presumido nas tabelas da seção 4. Em especial: se `valor` no webhook é bruto ou líquido da taxa (se for líquido, todo pagamento seria rejeitado por valor divergente); qual evento e qual status indicam pagamento; e se o `id` do evento é único por evento.
 3. Confirmar com o fornecedor se existe recorrência. Se não existir, decidir se a renovação manual por Pix é aceitável ou se é preciso outro provedor.
 4. Criar a conta, conectar um banco e gerar chave de API e segredo de webhook.
 5. Cadastrar a URL do webhook no provedor.
 6. Testar ponta a ponta com uma cobrança real de valor baixo, em ambiente que não seja produção.
 7. Definir as variáveis de ambiente em produção e aplicar a migração.
 8. Decidir o que acontece com as organizações que já existem na instância cloud quando a cobrança for ligada.
+9. Criar alerta para pagamento rejeitado por valor divergente: hoje ele só aparece no log e na tabela de eventos.
+10. Repassar as quatro variáveis novas ao ambiente de produção (compose e segredos do deploy).

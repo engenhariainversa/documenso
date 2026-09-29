@@ -54,11 +54,14 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
   // Event ids are scoped by organisation, since test files share the database.
   const scopedEventId = (eventId: string) => `${organisationId}:${eventId}`;
 
+  // What the handler reports and stores: the provider's id prefixed by the event type.
+  const storedEventId = (eventId: string, eventName = 'pingou') => `${eventName}:${scopedEventId(eventId)}`;
+
   const countSubscriptions = async () => await prisma.cloudSubscription.count({ where: { organisationId } });
 
   const findEvents = async () =>
     await prisma.cloudBillingWebhookEvent.findMany({
-      where: { eventId: { startsWith: `${organisationId}:` } },
+      where: { eventId: { contains: `:${organisationId}:` } },
     });
 
   const sendPayment = async ({
@@ -118,7 +121,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     const result = await sendPayment({ chargeId: charge.providerChargeId, reference: charge.id });
 
-    expect(result).toEqual({ status: 200, outcome: 'PROCESSED', eventId: scopedEventId('evt_1'), chargeId: charge.id });
+    expect(result).toEqual({ status: 200, outcome: 'PROCESSED', eventId: storedEventId('evt_1'), chargeId: charge.id });
 
     const paidCharge = await prisma.cloudSubscriptionCharge.findUniqueOrThrow({ where: { id: charge.id } });
     const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
@@ -142,7 +145,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
       provider: 'opapingou',
-      eventId: scopedEventId('evt_1'),
+      eventId: storedEventId('evt_1'),
       eventType: 'pingou',
       outcome: 'PROCESSED',
       chargeId: charge.id,
@@ -162,7 +165,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
 
-    expect(result).toEqual({ status: 200, outcome: 'DUPLICATE', eventId: scopedEventId('evt_1') });
+    expect(result).toEqual({ status: 200, outcome: 'DUPLICATE', eventId: storedEventId('evt_1') });
     expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-11-15T12:05:00.000Z');
     expect(await findEvents()).toHaveLength(1);
   });
@@ -199,7 +202,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
     expect(result).toEqual({
       status: 200,
       outcome: 'ALREADY_PAID',
-      eventId: scopedEventId('evt_2'),
+      eventId: storedEventId('evt_2'),
       chargeId: charge.id,
     });
     expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-11-15T12:05:00.000Z');
@@ -226,7 +229,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
     expect(result).toEqual({
       status: 200,
       outcome: 'REJECTED_AMOUNT_MISMATCH',
-      eventId: scopedEventId('evt_1'),
+      eventId: storedEventId('evt_1'),
       chargeId: charge.id,
     });
     expect(unpaidCharge.status).toBe(CloudSubscriptionChargeStatus.PENDING);
@@ -247,7 +250,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     const result = await sendPayment({ chargeId: 'cob_unknown', reference: 'unknown_reference' });
 
-    expect(result).toEqual({ status: 200, outcome: 'IGNORED_UNKNOWN_CHARGE', eventId: scopedEventId('evt_1') });
+    expect(result).toEqual({ status: 200, outcome: 'IGNORED_UNKNOWN_CHARGE', eventId: storedEventId('evt_1') });
     expect(await countSubscriptions()).toBe(0);
   });
 
@@ -269,8 +272,43 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
       eventName: 'cobranca_criada',
     });
 
-    expect(result).toEqual({ status: 200, outcome: 'IGNORED_EVENT_TYPE', eventId: scopedEventId('evt_1') });
+    expect(result).toEqual({
+      status: 200,
+      outcome: 'IGNORED_EVENT_TYPE',
+      eventId: storedEventId('evt_1', 'cobranca_criada'),
+    });
     expect(await countSubscriptions()).toBe(0);
+  });
+
+  it('still handles the payment after another event used the same provider id', async () => {
+    const charge = await startCheckout();
+
+    const created = await sendPayment({
+      eventId: 'shared_id',
+      chargeId: charge.providerChargeId,
+      reference: charge.id,
+      eventName: 'cobranca_criada',
+    });
+
+    const paid = await sendPayment({ eventId: 'shared_id', chargeId: charge.providerChargeId, reference: charge.id });
+
+    expect(created.outcome).toBe('IGNORED_EVENT_TYPE');
+    expect(paid.outcome).toBe('PROCESSED');
+    expect(await countSubscriptions()).toBe(1);
+  });
+
+  it('grants a single month when two different events report the same payment at the same time', async () => {
+    const charge = await startCheckout();
+
+    const results = await Promise.all([
+      sendPayment({ eventId: 'evt_1', chargeId: charge.providerChargeId, reference: charge.id }),
+      sendPayment({ eventId: 'evt_2', chargeId: charge.providerChargeId, reference: charge.id }),
+    ]);
+
+    const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
+
+    expect(results.map((result) => result.outcome).sort()).toEqual(['ALREADY_PAID', 'PROCESSED']);
+    expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-11-15T12:05:00.000Z');
   });
 
   it('finds the charge by the provider id when there is no reference', async () => {

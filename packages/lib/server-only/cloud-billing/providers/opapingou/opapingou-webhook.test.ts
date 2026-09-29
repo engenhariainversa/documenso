@@ -92,7 +92,7 @@ describe('verifyOpapingouWebhookSignature', () => {
 describe('parseOpapingouWebhookEvent', () => {
   it('reads a payment event', () => {
     expect(parseOpapingouWebhookEvent(RAW_BODY)).toEqual({
-      eventId: 'evt_1',
+      eventId: 'pingou:evt_1',
       eventType: 'pingou',
       isPayment: true,
       providerChargeId: 'cob_1',
@@ -114,7 +114,7 @@ describe('parseOpapingouWebhookEvent', () => {
       JSON.stringify({ id: 77, evento: 'pingou', cobranca: { id: 123, valor: '99.90' } }),
     );
 
-    expect(event?.eventId).toBe('77');
+    expect(event?.eventId).toBe('pingou:77');
     expect(event?.providerChargeId).toBe('123');
     expect(event?.reference).toBeNull();
   });
@@ -144,13 +144,51 @@ describe('parseOpapingouWebhookEvent', () => {
     const event = parseOpapingouWebhookEvent(JSON.stringify({ id: 'evt_2', evento: 'cobranca_expirada' }));
 
     expect(event).toEqual({
-      eventId: 'evt_2',
+      eventId: 'cobranca_expirada:evt_2',
       eventType: 'cobranca_expirada',
       isPayment: false,
       providerChargeId: null,
       reference: null,
       amountCents: null,
     });
+  });
+
+  it('gives different event ids to different events that share the provider id', () => {
+    const created = parseOpapingouWebhookEvent(JSON.stringify({ id: 'cob_1', evento: 'cobranca_criada' }));
+    const paid = parseOpapingouWebhookEvent(JSON.stringify({ ...PAYMENT_EVENT, id: 'cob_1' }));
+
+    expect(created?.eventId).toBe('cobranca_criada:cob_1');
+    expect(paid?.eventId).toBe('pingou:cob_1');
+  });
+
+  it('is a payment when the charge status is absent', () => {
+    const event = parseOpapingouWebhookEvent(
+      JSON.stringify({ id: 'evt_1', evento: 'pingou', cobranca: { id: 'cob_1', valor: '99.90' } }),
+    );
+
+    expect(event?.isPayment).toBe(true);
+  });
+
+  it.each([
+    'pendente',
+    'criada',
+    'expirada',
+    '',
+  ])('is not a payment when the charge status is %j, even for the payment event', (status) => {
+    const event = parseOpapingouWebhookEvent(
+      JSON.stringify({ ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, status } }),
+    );
+
+    expect(event?.isPayment).toBe(false);
+  });
+
+  it.each([
+    ['event id', { ...PAYMENT_EVENT, id: 'a'.repeat(256) }],
+    ['event name', { ...PAYMENT_EVENT, evento: 'a'.repeat(256) }],
+    ['charge id', { ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, id: 'a'.repeat(256) } }],
+    ['reference', { ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, referencia: 'a'.repeat(256) } }],
+  ])('returns null for an oversized %s', (_label, body) => {
+    expect(parseOpapingouWebhookEvent(JSON.stringify(body))).toBeNull();
   });
 
   it.each([

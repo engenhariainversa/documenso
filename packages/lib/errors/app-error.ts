@@ -93,6 +93,11 @@ export enum AppErrorCode {
    * and the TSP's `error` / `error_description` in the message when available.
    */
   CSC_REQUEST_FAILED = 'CSC_REQUEST_FAILED',
+
+  /**
+   * Docverse Cloud: the organisation needs an active plan to send documents.
+   */
+  SUBSCRIPTION_REQUIRED = 'SUBSCRIPTION_REQUIRED',
 }
 
 export const genericErrorCodeToTrpcErrorCodeMap: Record<string, { code: string; status: number }> = {
@@ -138,6 +143,7 @@ export const genericErrorCodeToTrpcErrorCodeMap: Record<string, { code: string; 
   // HTTP status rides along in AppError.statusCode for the few callers that
   // need to discriminate (e.g. 401 → re-auth, 429 → backoff).
   [AppErrorCode.CSC_REQUEST_FAILED]: { code: 'INTERNAL_SERVER_ERROR', status: 500 },
+  [AppErrorCode.SUBSCRIPTION_REQUIRED]: { code: 'PAYMENT_REQUIRED', status: 402 },
 };
 
 export const ZAppErrorJsonSchema = z.object({
@@ -338,6 +344,8 @@ export class AppError extends Error {
         AppErrorCode.CSC_ALGORITHM_REFUSED,
         AppErrorCode.CSC_SAD_EXPIRED_PRE_SIGN,
         AppErrorCode.CSC_EMBED_FAILED,
+        // The v1 contract declares no 402, so this is reported as a plain client error.
+        AppErrorCode.SUBSCRIPTION_REQUIRED,
         () => 400 as const,
       )
       .with(AppErrorCode.UNAUTHORIZED, () => 401 as const)

@@ -12,12 +12,18 @@ const { hasTestDatabase } = vi.hoisted(() => {
 });
 
 import { prisma } from '@documenso/prisma';
+import { EnvelopeType } from '@prisma/client';
 
 import { AppError } from '../../errors/app-error';
 import { getServerLimits } from '../limits/get-server-limits';
-import { assertOrganisationCanSendDocuments } from './assert-organisation-can-send';
+import {
+  assertOrganisationCanSendDocuments,
+  isDirectTemplateAvailable,
+  isOrganisationSendingAllowed,
+} from './assert-organisation-can-send';
 import {
   assertDisposableDatabaseUrl,
+  createTestEnvelope,
   createTestOrganisation,
   resetCloudBillingForOrganisations,
 } from './test-database';
@@ -120,6 +126,61 @@ describe.skipIf(!hasTestDatabase)('sending gate with billing enabled', () => {
       const error = await catchError(assertOrganisationCanSendDocuments({ teamId: 2_000_000_000, now: NOW }));
 
       expect(error?.code).toBe('NOT_FOUND');
+    });
+  });
+
+  describe('isOrganisationSendingAllowed', () => {
+    it('is false for an organisation that never paid', async () => {
+      expect(await isOrganisationSendingAllowed({ teamId, now: NOW })).toBe(false);
+    });
+
+    it('is true inside the paid period', async () => {
+      await setPeriodEnd(new Date('2026-11-01T00:00:00.000Z'));
+
+      expect(await isOrganisationSendingAllowed({ teamId, now: NOW })).toBe(true);
+    });
+
+    it('is false after the grace period', async () => {
+      await setPeriodEnd(new Date('2026-10-01T00:00:00.000Z'));
+
+      expect(await isOrganisationSendingAllowed({ teamId, now: NOW })).toBe(false);
+    });
+
+    it('is false for a team that does not exist', async () => {
+      expect(await isOrganisationSendingAllowed({ teamId: 2_000_000_000, now: NOW })).toBe(false);
+    });
+  });
+
+  describe('isDirectTemplateAvailable', () => {
+    let token: string;
+
+    beforeAll(async () => {
+      const template = await createTestEnvelope({ userId, teamId, type: EnvelopeType.TEMPLATE });
+
+      const directLink = await prisma.templateDirectLink.create({
+        data: {
+          envelopeId: template.id,
+          token: `billing-availability-${template.id}`,
+          enabled: true,
+          directTemplateRecipientId: 0,
+        },
+      });
+
+      token = directLink.token;
+    });
+
+    it('is unavailable when the organisation has no plan', async () => {
+      expect(await isDirectTemplateAvailable({ token, now: NOW })).toBe(false);
+    });
+
+    it('is available when the organisation has an active plan', async () => {
+      await setPeriodEnd(new Date('2026-11-01T00:00:00.000Z'));
+
+      expect(await isDirectTemplateAvailable({ token, now: NOW })).toBe(true);
+    });
+
+    it('is unavailable for a token that does not exist', async () => {
+      expect(await isDirectTemplateAvailable({ token: 'does-not-exist', now: NOW })).toBe(false);
     });
   });
 

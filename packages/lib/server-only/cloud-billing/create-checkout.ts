@@ -35,6 +35,12 @@ export type TCloudCheckoutCharge = {
 export type CreateCloudSubscriptionCheckoutOptions = {
   organisationId: string;
   userId: number;
+
+  /**
+   * Give up on the pending charge and create a new one, e.g. when its Pix code no
+   * longer works. The replaced charge is still honoured if it ends up being paid.
+   */
+  isReplacement?: boolean;
   now?: Date;
 };
 
@@ -49,6 +55,7 @@ export type CreateCloudSubscriptionCheckoutOptions = {
 export const createCloudSubscriptionCheckout = async ({
   organisationId,
   userId,
+  isReplacement = false,
   now = new Date(),
 }: CreateCloudSubscriptionCheckoutOptions): Promise<TCloudCheckoutCharge> => {
   if (!IS_CLOUD_BILLING_ENABLED()) {
@@ -64,7 +71,7 @@ export const createCloudSubscriptionCheckout = async ({
     });
   }
 
-  const { charge, isReused } = await findOrCreatePendingCharge({ organisationId, userId, now });
+  const { charge, isReused } = await findOrCreatePendingCharge({ organisationId, userId, isReplacement, now });
 
   if (isReused) {
     return mapChargeToCheckout(charge);
@@ -120,6 +127,7 @@ export const getCheckoutReuseCutoff = (now: Date) => {
 type FindOrCreatePendingChargeOptions = {
   organisationId: string;
   userId: number;
+  isReplacement: boolean;
   now: Date;
 };
 
@@ -129,7 +137,12 @@ type FindOrCreatePendingChargeOptions = {
  *
  * The provider is called outside of this transaction to keep the lock short.
  */
-const findOrCreatePendingCharge = async ({ organisationId, userId, now }: FindOrCreatePendingChargeOptions) => {
+const findOrCreatePendingCharge = async ({
+  organisationId,
+  userId,
+  isReplacement,
+  now,
+}: FindOrCreatePendingChargeOptions) => {
   const inFlightCutoff = DateTime.fromJSDate(now, { zone: 'utc' })
     .minus({ minutes: IN_FLIGHT_CHARGE_MINUTES })
     .toJSDate();
@@ -156,18 +169,21 @@ const findOrCreatePendingCharge = async ({ organisationId, userId, now }: FindOr
         providerChargeId: {
           not: null,
         },
-        OR: [
-          {
-            expiresAt: {
-              lte: now,
-            },
-          },
-          {
-            createdAt: {
-              lte: getCheckoutReuseCutoff(now),
-            },
-          },
-        ],
+        // A replacement retires every pending charge, not only the stale ones.
+        OR: isReplacement
+          ? undefined
+          : [
+              {
+                expiresAt: {
+                  lte: now,
+                },
+              },
+              {
+                createdAt: {
+                  lte: getCheckoutReuseCutoff(now),
+                },
+              },
+            ],
       },
       data: {
         status: CloudSubscriptionChargeStatus.EXPIRED,

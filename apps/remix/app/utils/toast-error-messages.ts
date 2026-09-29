@@ -137,6 +137,7 @@ export const getUploadErrorMessage = (code: string): ToastMessageDescriptor => {
 
 export const getTemplateUseErrorMessage = (code: string): ToastMessageDescriptor => {
   return match(code)
+    .with('SUBSCRIPTION_REQUIRED', () => SUBSCRIPTION_REQUIRED_ERROR_MESSAGE)
     .with('DOCUMENT_SEND_FAILED', () => ({
       title: msg`Error`,
       description: msg`The document was created but could not be sent to recipients.`,
