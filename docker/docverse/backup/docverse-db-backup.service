@@ -1,0 +1,15 @@
+# Unidade systemd de usuário para o backup do Postgres do Docverse.
+# Instalação: docker/docverse/backup/README.md (não é instalada automaticamente pelo deploy).
+[Unit]
+Description=Backup do Postgres do Docverse (docverse-db)
+After=docker.service
+
+[Service]
+Type=oneshot
+Environment=DOCVERSE_DB_CONTAINER=docverse-db
+Environment=DOCVERSE_BACKUP_DIR=/mnt/hd2tb/backups/docverse
+Environment=DOCVERSE_BACKUP_RETENTION_DAYS=14
+Environment=DOCVERSE_BACKUP_KEEP_MIN=7
+ExecStart=/mnt/hd2tb/projetos/documenso/prod/docker/docverse/backup/docverse-db-backup.sh
+Nice=10
+IOSchedulingClass=idle
