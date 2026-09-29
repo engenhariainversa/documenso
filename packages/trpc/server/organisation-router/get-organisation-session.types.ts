@@ -23,6 +23,11 @@ export const ZGetOrganisationSessionResponseSchema = ZOrganisationSchema.extend(
     }),
   ),
   subscription: SubscriptionSchema.nullable(),
+  cloudSubscription: z
+    .object({
+      currentPeriodEnd: z.date(),
+    })
+    .nullable(),
   currentOrganisationRole: z.nativeEnum(OrganisationMemberRole),
 }).array();
 

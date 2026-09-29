@@ -3,6 +3,7 @@ import { EnvelopeRenderProvider } from '@documenso/lib/client-only/providers/env
 import { IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { captureServerEvent } from '@documenso/lib/server-only/analytics/capture-server-event';
+import { isDirectTemplateAvailable } from '@documenso/lib/server-only/cloud-billing/assert-organisation-can-send';
 import { getEnvelopeForDirectTemplateSigning } from '@documenso/lib/server-only/envelope/get-envelope-for-direct-template-signing';
 import { getEnvelopeRequiredAccessData } from '@documenso/lib/server-only/envelope/get-envelope-required-access-data';
 import { getOrganisationClaimByTeamId } from '@documenso/lib/server-only/organisation/get-organisation-claims';
@@ -275,6 +276,12 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
   });
 
   if (!foundDirectLink) {
+    throw new Response('Not Found', { status: 404 });
+  }
+
+  // Docverse Cloud: without an active plan the document would be refused on submit,
+  // so the signer is told before filling it in. No-op when billing is disabled.
+  if (!(await isDirectTemplateAvailable({ token }))) {
     throw new Response('Not Found', { status: 404 });
   }
 

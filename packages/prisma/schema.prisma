@@ -335,6 +335,77 @@ model OrganisationMonthlyStat {
   @@index([organisationId])
 }
 
+enum CloudSubscriptionChargeStatus {
+  PENDING
+  PAID
+  EXPIRED
+}
+
+/// Docverse Cloud subscription of an organisation.
+///
+/// The row is created by the first confirmed payment. The subscription state is
+/// derived from `currentPeriodEnd` on read, it is never stored.
+model CloudSubscription {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Start of the uninterrupted coverage. Renewing before the end keeps it; renewing
+  /// after a lapse moves it to the payment date.
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+
+  organisationId String       @unique
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+}
+
+/// One payment request for one month of Docverse Cloud.
+///
+/// The `id` is also the reference sent to the payment provider.
+model CloudSubscriptionCharge {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  status      CloudSubscriptionChargeStatus @default(PENDING)
+  amountCents Int
+  currency    String                        @default("BRL")
+
+  provider         String
+  providerChargeId String?
+  paymentUrl       String?
+  pixCopyPaste     String?
+  expiresAt        DateTime?
+
+  paidAt      DateTime?
+  /// The period this payment bought. Set when the charge is paid.
+  periodStart DateTime?
+  periodEnd   DateTime?
+
+  createdByUserId Int?
+
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerChargeId])
+  @@index([organisationId, status])
+}
+
+/// Payment provider webhook events already handled, used for idempotency.
+model CloudBillingWebhookEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  provider  String
+  /// The provider's event id, or "sha256:<hash of the body>" when it sends none.
+  eventId   String
+  eventType String
+  outcome   String
+  chargeId  String?
+
+  @@unique([provider, eventId])
+}
+
 model Account {
   id                String   @id @default(cuid())
   // When this record was created, unrelated to anything passed back by the provider.
@@ -835,6 +906,9 @@ model Organisation {
   organisationEmails OrganisationEmail[]
 
   monthlyStats OrganisationMonthlyStat[]
+
+  cloudSubscription        CloudSubscription?
+  cloudSubscriptionCharges CloudSubscriptionCharge[]
 
   avatarImage AvatarImage? @relation(fields: [avatarImageId], references: [id], onDelete: SetNull)
 

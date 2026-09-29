@@ -41,6 +41,7 @@ import {
 } from '../../utils/document-auth';
 import { mapSecondaryIdToTemplateId } from '../../utils/envelope';
 import { getRecipientsWithMissingFields } from '../../utils/recipients';
+import { assertOrganisationCanSendDocuments } from '../cloud-billing/assert-organisation-can-send';
 import { sendDocument } from '../document/send-document';
 import { validateFieldAuth } from '../document/validate-field-auth';
 import { incrementDocumentId } from '../envelope/increment-id';
@@ -139,6 +140,11 @@ export const createDocumentFromDirectTemplate = async ({
   if (!directTemplateEnvelope?.directLink?.enabled) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, { message: 'Invalid or missing template' });
   }
+
+  // Docverse Cloud: a direct template sends a document on behalf of the organisation, so
+  // it requires an active subscription. Checked before the signer's work is processed.
+  // No-op when billing is disabled.
+  await assertOrganisationCanSendDocuments({ teamId: directTemplateEnvelope.teamId });
 
   if (
     nextSigner &&

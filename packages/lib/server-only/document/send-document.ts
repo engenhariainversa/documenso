@@ -37,6 +37,7 @@ import { extractDocumentAuthMethods } from '../../utils/document-auth';
 import { type EnvelopeIdOptions, mapSecondaryIdToDocumentId } from '../../utils/envelope';
 import { toCheckboxCustomText, toRadioCustomText } from '../../utils/fields';
 import { getRecipientsWithMissingFields, isRecipientEmailValidForSending } from '../../utils/recipients';
+import { assertOrganisationCanSendDocuments } from '../cloud-billing/assert-organisation-can-send';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { insertFormValuesInPdf } from '../pdf/insert-form-values-in-pdf';
 import { assertUserNotDisabledById } from '../user/assert-user-not-disabled';
@@ -103,6 +104,9 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
   if (!envelope) {
     throw new Error('Document not found');
   }
+
+  // Docverse Cloud: sending requires an active subscription. No-op when billing is disabled.
+  await assertOrganisationCanSendDocuments({ teamId: envelope.teamId });
 
   if (envelope.recipients.length === 0) {
     throw new Error('Document has no recipients');

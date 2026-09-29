@@ -26,4 +26,22 @@ describe('buildLimitsResponse', () => {
     expect(result.maximumEnvelopeItemCount).toBe(DEFAULT_MINIMUM_ENVELOPE_ITEM_COUNT);
     expect(result.maximumRecipientCount).toBe(DEFAULT_RECIPIENT_COUNT);
   });
+
+  it('allows sending when no subscription state is given', () => {
+    const result = buildLimitsResponse({ envelopeItemCount: 10, recipientCount: 0 });
+
+    expect(result.subscription).toEqual({ state: 'DISABLED', isSendingAllowed: true });
+  });
+
+  it('keeps quotas unlimited for an organisation that cannot send', () => {
+    const result = buildLimitsResponse(
+      { envelopeItemCount: 10, recipientCount: 0 },
+      { state: 'NONE', isSendingAllowed: false },
+    );
+
+    expect(result.subscription).toEqual({ state: 'NONE', isSendingAllowed: false });
+    expect(result.quota.documents).toBe(Infinity);
+    expect(result.remaining.documents).toBe(Infinity);
+    expect(result.remaining.directTemplates).toBe(Infinity);
+  });
 });

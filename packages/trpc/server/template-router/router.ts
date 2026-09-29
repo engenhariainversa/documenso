@@ -1,6 +1,10 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { jobs } from '@documenso/lib/jobs/client';
 import { captureServerEvent } from '@documenso/lib/server-only/analytics/capture-server-event';
+import {
+  assertOrganisationCanSendDocuments,
+  assertSendingAllowed,
+} from '@documenso/lib/server-only/cloud-billing/assert-organisation-can-send';
 import { getDocumentWithDetailsById } from '@documenso/lib/server-only/document/get-document-with-details-by-id';
 import { sendDocument } from '@documenso/lib/server-only/document/send-document';
 import { convertToPdf } from '@documenso/lib/server-only/document-conversion';
@@ -544,6 +548,12 @@ export const templateRouter = router({
         throw new Error('You have reached your document limit.');
       }
 
+      // Docverse Cloud: refuse before the draft is created, instead of creating a
+      // document that then fails to be sent.
+      if (distributeDocument) {
+        assertSendingAllowed(limits.subscription.state);
+      }
+
       // Backwards compatibility mapping since we need the envelopeItemId for the custom document data.
       const customDocumentData = customDocumentDataId
         ? [
@@ -832,6 +842,12 @@ export const templateRouter = router({
       throw new AppError(AppErrorCode.NOT_FOUND, {
         message: 'Template not found',
       });
+    }
+
+    // Docverse Cloud: refuse before the job starts, instead of leaving one unsent
+    // draft per row of the spreadsheet. No-op when billing is disabled.
+    if (sendImmediately) {
+      await assertOrganisationCanSendDocuments({ teamId });
     }
 
     const csvValidationResult = validateBulkSendCsv({

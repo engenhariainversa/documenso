@@ -1,4 +1,5 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
+import { assertSendingAllowed } from '@documenso/lib/server-only/cloud-billing/assert-organisation-can-send';
 import { sendDocument } from '@documenso/lib/server-only/document/send-document';
 import { getEnvelopeById } from '@documenso/lib/server-only/envelope/get-envelope-by-id';
 import { getServerLimits } from '@documenso/lib/server-only/limits/get-server-limits';
@@ -46,6 +47,12 @@ export const useEnvelopeRoute = authenticatedProcedure
       throw new AppError(AppErrorCode.LIMIT_EXCEEDED, {
         message: 'You have reached your document limit.',
       });
+    }
+
+    // Docverse Cloud: refuse before the draft is created, instead of creating a
+    // document that then fails to be sent.
+    if (distributeDocument) {
+      assertSendingAllowed(limits.subscription.state);
     }
 
     // Verify the template exists and get envelope items

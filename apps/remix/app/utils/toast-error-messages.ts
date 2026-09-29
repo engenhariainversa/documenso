@@ -18,8 +18,19 @@ export const FAIR_USE_LIMIT_EXCEEDED_ERROR_MESSAGE = {
   description: msg`Your organisation has reached its plan's fair use limit. Please contact your organisation administrator or support to continue.`,
 };
 
+export const SUBSCRIPTION_REQUIRED_ERROR_MESSAGE = {
+  title: msg`Subscription required`,
+  description: msg`Your organisation needs an active plan to send documents. Ask an organisation administrator to subscribe.`,
+};
+
+export const DIRECT_TEMPLATE_UNAVAILABLE_ERROR_MESSAGE = {
+  title: msg`Document unavailable`,
+  description: msg`This document cannot be signed at the moment. Please contact the sender.`,
+};
+
 export const getDistributeErrorMessage = (code: string): ToastMessageDescriptor => {
   return match(code)
+    .with('SUBSCRIPTION_REQUIRED', () => SUBSCRIPTION_REQUIRED_ERROR_MESSAGE)
     .with('RECIPIENT_LIMIT_EXCEEDED', () => RECIPIENT_LIMIT_EXCEEDED_ERROR_MESSAGE)
     .with(AppErrorCode.TOO_MANY_REQUESTS, () => FAIR_USE_LIMIT_EXCEEDED_ERROR_MESSAGE)
     .otherwise(() => ({
@@ -29,17 +40,21 @@ export const getDistributeErrorMessage = (code: string): ToastMessageDescriptor 
 };
 
 export const getDirectTemplateErrorMessage = (code: string): ToastMessageDescriptor => {
-  return match(code)
-    .with('RECIPIENT_LIMIT_EXCEEDED', () => RECIPIENT_LIMIT_EXCEEDED_ERROR_MESSAGE)
-    .with(AppErrorCode.TOO_MANY_REQUESTS, () => FAIR_USE_LIMIT_EXCEEDED_ERROR_MESSAGE)
-    .with(AppErrorCode.MISSING_SIGNATURE_FIELD, () => ({
-      title: msg`Missing signature fields`,
-      description: msg`This direct link template cannot be used because one or more signers do not have a signature field assigned.`,
-    }))
-    .otherwise(() => ({
-      title: msg`Something went wrong`,
-      description: msg`We were unable to submit this document at this time. Please try again later.`,
-    }));
+  return (
+    match(code)
+      // The signer is not a member of the organisation, so its plan is not mentioned.
+      .with('SUBSCRIPTION_REQUIRED', () => DIRECT_TEMPLATE_UNAVAILABLE_ERROR_MESSAGE)
+      .with('RECIPIENT_LIMIT_EXCEEDED', () => RECIPIENT_LIMIT_EXCEEDED_ERROR_MESSAGE)
+      .with(AppErrorCode.TOO_MANY_REQUESTS, () => FAIR_USE_LIMIT_EXCEEDED_ERROR_MESSAGE)
+      .with(AppErrorCode.MISSING_SIGNATURE_FIELD, () => ({
+        title: msg`Missing signature fields`,
+        description: msg`This direct link template cannot be used because one or more signers do not have a signature field assigned.`,
+      }))
+      .otherwise(() => ({
+        title: msg`Something went wrong`,
+        description: msg`We were unable to submit this document at this time. Please try again later.`,
+      }))
+  );
 };
 
 /**
@@ -122,6 +137,7 @@ export const getUploadErrorMessage = (code: string): ToastMessageDescriptor => {
 
 export const getTemplateUseErrorMessage = (code: string): ToastMessageDescriptor => {
   return match(code)
+    .with('SUBSCRIPTION_REQUIRED', () => SUBSCRIPTION_REQUIRED_ERROR_MESSAGE)
     .with('DOCUMENT_SEND_FAILED', () => ({
       title: msg`Error`,
       description: msg`The document was created but could not be sent to recipients.`,

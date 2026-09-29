@@ -14651,3 +14651,170 @@ msgstr ""
 #: packages/ui/primitives/signature-pad/signature-pad-upload.tsx
 msgid "Zoom out"
 msgstr ""
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "404 Page not found"
+msgstr "404 Página não encontrada"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "A payment is already being prepared. Please wait a moment."
+msgstr "Um pagamento já está sendo preparado. Aguarde um instante."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Copy code"
+msgstr "Copiar código"
+
+#: apps/remix/app/utils/toast-error-messages.ts
+msgid "Document unavailable"
+msgstr "Documento indisponível"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Everything unlimited: documents, recipients, teams and members."
+msgstr "Tudo ilimitado: documentos, destinatários, equipes e membros."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "I have paid"
+msgstr "Já paguei"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "It can take a few minutes. Check again shortly."
+msgstr "Pode levar alguns minutos. Verifique de novo em instantes."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Manage the Docverse Cloud plan of your organisation."
+msgstr "Gerencie o plano Docverse Cloud da sua organização."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "No plan"
+msgstr "Sem plano"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Open payment page"
+msgstr "Abrir página de pagamento"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Page not found"
+msgstr "Página não encontrada"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Pay with Pix. The plan is activated when the payment is confirmed."
+msgstr "Pague com Pix. O plano é ativado quando o pagamento for confirmado."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Payment is made by Pix, one month at a time. The plan does not renew on its own: you choose when to pay for the next month."
+msgstr "O pagamento é feito por Pix, um mês por vez. O plano não renova sozinho: você escolhe quando pagar o próximo mês."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Payment not confirmed yet"
+msgstr "Pagamento ainda não confirmado"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Payments are not available yet."
+msgstr "Os pagamentos ainda não estão disponíveis."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Payments are not available yet. Please try again later."
+msgstr "Os pagamentos ainda não estão disponíveis. Tente novamente mais tarde."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Pix copy and paste"
+msgstr "Pix copia e cola"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+#: packages/lib/utils/settings-nav.ts
+msgid "Plan"
+msgstr "Plano"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Plan active"
+msgstr "Plano ativo"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Renew for one month"
+msgstr "Renovar por um mês"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Select the code and copy it manually."
+msgstr "Selecione o código e copie manualmente."
+
+#: apps/remix/app/utils/toast-error-messages.ts
+msgid "Subscription required"
+msgstr "Assinatura necessária"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "The page you are looking for may have been removed, renamed or may have never existed."
+msgstr "A página que você procura pode ter sido removida, renomeada ou nunca ter existido."
+
+#: apps/remix/app/utils/toast-error-messages.ts
+msgid "This document cannot be signed at the moment. Please contact the sender."
+msgstr "Este documento não pode ser assinado no momento. Entre em contato com o remetente."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "This payment request expires on {expiresAt}."
+msgstr "Este pedido de pagamento expira em {expiresAt}."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Unable to copy"
+msgstr "Não foi possível copiar"
+
+#: apps/remix/app/components/general/cloud-billing/cloud-subscription-banner.tsx
+msgid "View plan"
+msgstr "Ver plano"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Waiting for payment of {amount}"
+msgstr "Aguardando o pagamento de {amount}"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "We were unable to start the payment at this time. Please try again later."
+msgstr "Não foi possível iniciar o pagamento agora. Tente novamente mais tarde."
+
+#: apps/remix/app/components/general/cloud-billing/cloud-subscription-banner.tsx
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "You can create documents, but you need a plan to send them."
+msgstr "Você pode criar documentos, mas precisa de um plano para enviá-los."
+
+#: apps/remix/app/utils/toast-error-messages.ts
+msgid "Your organisation needs an active plan to send documents. Ask an organisation administrator to subscribe."
+msgstr "Sua organização precisa de um plano ativo para enviar documentos. Peça a um administrador da organização para assinar."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Your payment was confirmed. You can send documents now."
+msgstr "Seu pagamento foi confirmado. Você já pode enviar documentos."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Your plan expired on {periodEnd}. Renew it to keep sending documents."
+msgstr "Seu plano venceu em {periodEnd}. Renove para continuar enviando documentos."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Your plan expired on {periodEnd}. You can create documents, but not send them."
+msgstr "Seu plano venceu em {periodEnd}. Você pode criar documentos, mas não enviá-los."
+
+#: apps/remix/app/components/general/cloud-billing/cloud-subscription-banner.tsx
+msgid "Your plan has expired. Renew it to keep sending documents."
+msgstr "Seu plano venceu. Renove para continuar enviando documentos."
+
+#: apps/remix/app/components/general/cloud-billing/cloud-subscription-banner.tsx
+msgid "Your plan has expired. You can create documents, but not send them."
+msgstr "Seu plano venceu. Você pode criar documentos, mas não enviá-los."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Your plan is active until {periodEnd}."
+msgstr "Seu plano está ativo até {periodEnd}."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Generate a new code"
+msgstr "Gerar novo código"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "If the code no longer works, generate a new one. Pay only one of them."
+msgstr "Se o código não funcionar mais, gere um novo. Pague apenas um deles."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "per month"
+msgstr "por mês"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Subscribe"
+msgstr "Assinar"
