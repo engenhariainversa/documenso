@@ -15,11 +15,17 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router';
 
+import { LandingPricingSection } from '~/components/docverse/landing-pricing-section';
 import { BrandingLogo } from '~/components/general/branding-logo';
 
 export type LandingPageProps = {
   lang: LandingLanguage;
   isSignupEnabled: boolean;
+
+  /**
+   * Whether to show the plans. Only true on an instance that sells the cloud plan.
+   */
+  isPricingVisible?: boolean;
 };
 
 /**
@@ -30,7 +36,7 @@ export type LandingPageProps = {
  *
  * Only list features that exist in the codebase today.
  */
-export const LandingPage = ({ lang, isSignupEnabled }: LandingPageProps) => {
+export const LandingPage = ({ lang, isSignupEnabled, isPricingVisible = false }: LandingPageProps) => {
   const copy = LANDING_COPY[lang];
 
   const otherLang: LandingLanguage = lang === 'pt-BR' ? 'en' : 'pt-BR';
@@ -140,6 +146,8 @@ export const LandingPage = ({ lang, isSignupEnabled }: LandingPageProps) => {
             </div>
           </div>
         </section>
+
+        {isPricingVisible && <LandingPricingSection lang={lang} isSignupEnabled={isSignupEnabled} />}
 
         <section className="border-border border-t bg-muted/30">
           <div className="mx-auto w-full max-w-5xl px-4 py-14 md:px-8">
