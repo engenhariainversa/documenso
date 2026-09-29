@@ -1,6 +1,19 @@
 import { msg } from '@lingui/core/macro';
 
-export const TEMPLATE_RECIPIENT_EMAIL_PLACEHOLDER_REGEX = /recipient\.\d+@documenso\.com/i;
+/**
+ * Placeholder recipients use a reserved `.invalid` domain (RFC 2606) so a
+ * placeholder that slips into a send can never reach a real mailbox.
+ */
+export const TEMPLATE_RECIPIENT_EMAIL_PLACEHOLDER_DOMAIN = 'docverse.invalid';
+
+export const generateTemplateRecipientPlaceholderEmail = (index: number) =>
+  `recipient.${index}@${TEMPLATE_RECIPIENT_EMAIL_PLACEHOLDER_DOMAIN}`;
+
+/**
+ * Also matches the `@documenso.com` placeholders created before the rename, which may
+ * still exist in upgraded databases.
+ */
+export const TEMPLATE_RECIPIENT_EMAIL_PLACEHOLDER_REGEX = /recipient\.\d+@(docverse\.invalid|documenso\.com)/i;
 export const TEMPLATE_RECIPIENT_NAME_PLACEHOLDER_REGEX = /Recipient \d+/i;
 
 export const isTemplateRecipientEmailPlaceholder = (email: string) => {

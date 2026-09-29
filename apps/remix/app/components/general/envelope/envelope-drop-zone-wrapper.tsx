@@ -1,8 +1,7 @@
 import { useAnalytics } from '@documenso/lib/client-only/hooks/use-analytics';
 import { useLimits } from '@documenso/lib/client-only/providers/limits';
-import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { useSession } from '@documenso/lib/client-only/providers/session';
-import { APP_DOCUMENT_UPLOAD_SIZE_LIMIT, IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
+import { APP_DOCUMENT_UPLOAD_SIZE_LIMIT } from '@documenso/lib/constants/app';
 import { getAllowedUploadMimeTypes } from '@documenso/lib/constants/document-conversion';
 import { DEFAULT_DOCUMENT_TIME_ZONE, TIME_ZONES } from '@documenso/lib/constants/time-zones';
 import { AppError } from '@documenso/lib/errors/app-error';
@@ -19,7 +18,7 @@ import { EnvelopeType } from '@prisma/client';
 import { Loader } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { ErrorCode as DropzoneErrorCode, type FileRejection, useDropzone } from 'react-dropzone';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 
 import { useCurrentTeam } from '~/providers/team';
 import { getUploadErrorMessage } from '~/utils/toast-error-messages';
@@ -40,8 +39,6 @@ export const EnvelopeDropZoneWrapper = ({ children, type, className }: EnvelopeD
 
   const navigate = useNavigate();
   const analytics = useAnalytics();
-  const organisation = useCurrentOrganisation();
-
   const [isLoading, setIsLoading] = useState(false);
 
   const userTimezone =
@@ -55,11 +52,6 @@ export const EnvelopeDropZoneWrapper = ({ children, type, className }: EnvelopeD
   const isUploadDisabled = remaining.documents === 0 || !user.emailVerified;
 
   const onFileDrop = async (files: File[]) => {
-    if (isUploadDisabled && IS_BILLING_ENABLED()) {
-      await navigate(`/o/${organisation.url}/settings/billing`);
-      return;
-    }
-
     try {
       setIsLoading(true);
 
@@ -174,15 +166,6 @@ export const EnvelopeDropZoneWrapper = ({ children, type, className }: EnvelopeD
             <p className="mt-4 text-base text-muted-foreground">
               <Trans>Drag and drop your document here</Trans>
             </p>
-
-            {isUploadDisabled && IS_BILLING_ENABLED() && (
-              <Link
-                to={`/o/${organisation.url}/settings/billing`}
-                className="mt-4 text-amber-500 text-sm hover:underline dark:text-amber-400"
-              >
-                <Trans>Upgrade your plan to upload more documents</Trans>
-              </Link>
-            )}
 
             {!isUploadDisabled &&
               team?.id === undefined &&
