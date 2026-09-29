@@ -1,9 +1,10 @@
 import { prisma } from '@documenso/prisma';
-import { DocumentSource, DocumentStatus, EnvelopeType, OrganisationType } from '@prisma/client';
+import type { OrganisationMemberRole } from '@prisma/client';
+import { DocumentSource, DocumentStatus, EnvelopeType, OrganisationGroupType, OrganisationType } from '@prisma/client';
 
 import { SignatureLevel } from '../../types/signature-level';
 import { INTERNAL_CLAIM_ID } from '../../types/subscription';
-import { alphaid, prefixedId } from '../../universal/id';
+import { alphaid, generateDatabaseId, prefixedId } from '../../universal/id';
 import { incrementDocumentId, incrementTemplateId } from '../envelope/increment-id';
 import { createOrganisation } from '../organisation/create-organisation';
 import { getSubscriptionClaim } from '../subscription/get-subscription-claim';
@@ -167,4 +168,48 @@ export const createTestEnvelope = async ({
       teamId,
     },
   });
+};
+
+export type AddTestOrganisationMemberOptions = {
+  organisationId: string;
+  role: OrganisationMemberRole;
+};
+
+/**
+ * Adds a new user to the organisation, in the internal group of the given role.
+ */
+export const addTestOrganisationMember = async ({ organisationId, role }: AddTestOrganisationMemberOptions) => {
+  const suffix = alphaid(12);
+
+  const user = await prisma.user.create({
+    data: {
+      name: `Billing Test Member ${suffix}`,
+      email: `billing-test-member-${suffix}@docverse.invalid`,
+      emailVerified: new Date(),
+    },
+  });
+
+  const group = await prisma.organisationGroup.findFirstOrThrow({
+    where: {
+      organisationId,
+      type: OrganisationGroupType.INTERNAL_ORGANISATION,
+      organisationRole: role,
+    },
+  });
+
+  await prisma.organisationMember.create({
+    data: {
+      id: generateDatabaseId('member'),
+      userId: user.id,
+      organisationId,
+      organisationGroupMembers: {
+        create: {
+          id: generateDatabaseId('group_member'),
+          groupId: group.id,
+        },
+      },
+    },
+  });
+
+  return user;
 };
