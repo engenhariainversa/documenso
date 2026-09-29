@@ -29,7 +29,6 @@ import {
   ZRadioFieldMeta,
   ZTextFieldMeta,
 } from '../../types/field-meta';
-import { isTspEnvelope } from '../../types/signature-level';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { getFileServerSide } from '../../universal/upload/get-file.server';
 import { putNormalizedPdfFileServerSide } from '../../universal/upload/put-file.server';
@@ -125,26 +124,7 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
 
   const legacyDocumentId = mapSecondaryIdToDocumentId(envelope.secondaryId);
 
-  let signingOrder = envelope.documentMeta?.signingOrder || DocumentSigningOrder.PARALLEL;
-
-  if (isTspEnvelope(envelope) && signingOrder === DocumentSigningOrder.PARALLEL && envelope.documentMeta) {
-    console.warn(
-      `[CSC] Coercing signingOrder=PARALLEL → SEQUENTIAL for ${envelope.signatureLevel} envelope ${envelope.id} at send time. The schema-layer guard should have caught this earlier.`,
-    );
-
-    await prisma.documentMeta.update({
-      where: {
-        id: envelope.documentMeta.id,
-      },
-      data: {
-        signingOrder: DocumentSigningOrder.SEQUENTIAL,
-      },
-    });
-
-    signingOrder = DocumentSigningOrder.SEQUENTIAL;
-
-    envelope.documentMeta.signingOrder = DocumentSigningOrder.SEQUENTIAL;
-  }
+  const signingOrder = envelope.documentMeta?.signingOrder || DocumentSigningOrder.PARALLEL;
 
   let recipientsToNotify = envelope.recipients;
 

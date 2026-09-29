@@ -74,15 +74,12 @@ type EnvelopeEditorProviderValue = {
 
   registerExternalFlush: (key: string, flush: () => Promise<void>) => () => void;
   registerPendingMutation: (promise: Promise<unknown>) => void;
-
-  organisationEmails?: { id: string; email: string }[];
 };
 
 interface EnvelopeEditorProviderProps {
   children: React.ReactNode;
   editorConfig?: EnvelopeEditorConfig;
   initialEnvelope: TEditorEnvelope;
-  organisationEmails?: { id: string; email: string }[];
 }
 
 const EnvelopeEditorContext = createContext<EnvelopeEditorProviderValue | null>(null);
@@ -101,7 +98,6 @@ export const EnvelopeEditorProvider = ({
   children,
   editorConfig: providedEditorConfig = DEFAULT_EDITOR_CONFIG,
   initialEnvelope,
-  organisationEmails,
 }: EnvelopeEditorProviderProps) => {
   const { t } = useLingui();
   const { toast } = useToast();
@@ -563,7 +559,6 @@ export const EnvelopeEditorProvider = ({
         resetForms,
         registerExternalFlush,
         registerPendingMutation,
-        organisationEmails,
       }}
     >
       {children}

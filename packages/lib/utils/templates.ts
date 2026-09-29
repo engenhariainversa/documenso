@@ -1,6 +1,7 @@
 import type { DocumentMeta, Envelope, Field, Recipient } from '@prisma/client';
 
 import { NEXT_PUBLIC_WEBAPP_URL } from '../constants/app';
+import { generateTemplateRecipientPlaceholderEmail } from '../constants/template';
 import type { TTemplateLite } from '../types/template';
 import { mapSecondaryIdToTemplateId } from './envelope';
 import { mapFieldToLegacyField } from './fields';
@@ -23,7 +24,7 @@ export const formatDirectTemplatePath = (token: string) => {
 export const generateRecipientPlaceholder = (index: number) => {
   return {
     name: `Recipient ${index}`,
-    email: `recipient.${index}@documenso.com`,
+    email: generateTemplateRecipientPlaceholderEmail(index),
   };
 };
 

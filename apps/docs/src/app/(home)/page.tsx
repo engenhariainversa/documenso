@@ -215,9 +215,7 @@ export default function HomePage() {
           </div>
           <div>
             <h3 className="mb-1 font-semibold">Policies & Licensing</h3>
-            <p className="text-fd-muted-foreground text-sm">
-              AGPL and Enterprise licenses, fair use, privacy policy, and support.
-            </p>
+            <p className="text-fd-muted-foreground text-sm">AGPL-3.0 license, fair use, privacy policy, and support.</p>
           </div>
         </Link>
       </div>
