@@ -23,7 +23,7 @@ export const assertUserCanManageOrganisationBilling = async ({
     where: buildOrganisationWhereQuery({
       organisationId,
       userId,
-      roles: ORGANISATION_MEMBER_ROLE_PERMISSIONS_MAP['MANAGE_BILLING'],
+      roles: ORGANISATION_MEMBER_ROLE_PERMISSIONS_MAP.MANAGE_BILLING,
     }),
     select: {
       id: true,
