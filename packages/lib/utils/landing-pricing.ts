@@ -30,6 +30,12 @@ export const LANDING_PLANS: LandingPlan[] = [
   },
 ];
 
+/**
+ * Intl puts a non-breaking space after the currency symbol. Built from its code so
+ * that no editor or formatter can silently turn it into a plain space.
+ */
+const NON_BREAKING_SPACE = String.fromCharCode(0xa0);
+
 export type FormatLandingPlanPriceOptions = {
   priceCents: number;
   lang: LandingLanguage;
@@ -46,7 +52,7 @@ export const formatLandingPlanPrice = ({ priceCents, lang }: FormatLandingPlanPr
 
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
     .format(priceCents / 100)
-    .replace(/ /g, ' ');
+    .replaceAll(NON_BREAKING_SPACE, ' ');
 };
 
 /**
