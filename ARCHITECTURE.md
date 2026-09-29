@@ -1,10 +1,12 @@
-# Documenso Architecture
+# Docverse Architecture
 
-This document provides a high-level overview of the Documenso codebase to help humans and agents understand how the application is structured.
+This document provides a high-level overview of the Docverse codebase to help humans and agents understand how the application is structured.
 
 ## Overview
 
-Documenso is an open-source document signing platform built as a **monorepo** using npm workspaces and Turborepo. The application enables users to create, send, and sign documents electronically.
+Docverse is a 100% AGPLv3 fork of [Documenso](https://github.com/documenso/documenso), an open-source document signing platform built as a **monorepo** using npm workspaces and Turborepo. The application enables users to create, send, and sign documents electronically.
+
+The Documenso commercial-licence code (`packages/ee`), licence checks, billing and telemetry were removed. Internal package names keep the `@documenso/*` scope.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -57,7 +59,6 @@ Documenso is an open-source document signing platform built as a **monorepo** us
 | `@documenso/email`   | Email templates and mailer (React Email)                  |
 | `@documenso/auth`    | Authentication (OAuth via Arctic, WebAuthn/Passkeys)      |
 | `@documenso/signing` | PDF signing (Local P12, Google Cloud KMS)                 |
-| `@documenso/ee`      | Enterprise Edition features                               |
 | `@documenso/assets`  | Static assets                                             |
 
 ### Supporting Packages
@@ -293,7 +294,7 @@ Hono Server (apps/remix/server/)
 ## Key Directories
 
 ```
-documenso/
+.
 ├── apps/
 │   └── remix/
 │       ├── app/

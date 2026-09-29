@@ -1,6 +1,5 @@
 import { useCopyToClipboard } from '@documenso/lib/client-only/hooks/use-copy-to-clipboard';
 import { useLimits } from '@documenso/lib/client-only/providers/limits';
-import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { DIRECT_TEMPLATE_RECIPIENT_EMAIL } from '@documenso/lib/constants/direct-templates';
 import { RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';
 import { DIRECT_TEMPLATE_DOCUMENTATION } from '@documenso/lib/constants/template';
@@ -31,7 +30,7 @@ import { Trans } from '@lingui/react/macro';
 import { RecipientRole, type TemplateDirectLink } from '@prisma/client';
 import { CircleDotIcon, CircleIcon, ClipboardCopyIcon, InfoIcon, LinkIcon, LoaderIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useRevalidator } from 'react-router';
+import { useRevalidator } from 'react-router';
 import { match, P } from 'ts-pattern';
 
 type TemplateDirectLinkDialogProps = {
@@ -67,8 +66,6 @@ export const TemplateDirectLinkDialog = ({
   const [token, setToken] = useState(directLink?.token ?? null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<number | null>(null);
   const [currentStep, setCurrentStep] = useState<TemplateDirectLinkStep>(token ? 'MANAGE' : 'ONBOARD');
-
-  const organisation = useCurrentOrganisation();
 
   const validDirectTemplateRecipients = useMemo(
     () =>
@@ -234,15 +231,7 @@ export const TemplateDirectLinkDialog = ({
                         </Trans>
                       </AlertTitle>
                       <AlertDescription>
-                        <Trans>
-                          You have reached the maximum limit of {quota.directTemplates} direct templates.{' '}
-                          <Link
-                            className="mt-1 block underline underline-offset-4"
-                            to={`/o/${organisation.url}/settings/billing`}
-                          >
-                            Upgrade your account to continue!
-                          </Link>
-                        </Trans>
+                        <Trans>You have reached the maximum limit of {quota.directTemplates} direct templates.</Trans>
                       </AlertDescription>
                     </Alert>
                   )}

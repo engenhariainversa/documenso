@@ -142,7 +142,7 @@ const config = {
       },
       {
         source: '/users/licenses/enterprise-edition',
-        destination: '/docs/policies/enterprise-edition',
+        destination: '/docs/policies/licenses',
         permanent: true,
       },
 
@@ -205,11 +205,6 @@ const config = {
       {
         source: '/developers/self-hosting/setting-up-oauth-providers',
         destination: '/docs/self-hosting/configuration/advanced/oauth-providers',
-        permanent: true,
-      },
-      {
-        source: '/developers/self-hosting/telemetry',
-        destination: '/docs/self-hosting/configuration/telemetry',
         permanent: true,
       },
       {
@@ -403,11 +398,6 @@ const config = {
       {
         source: '/self-hosting/configuration/storage',
         destination: '/docs/self-hosting/configuration/storage',
-        permanent: true,
-      },
-      {
-        source: '/self-hosting/configuration/telemetry',
-        destination: '/docs/self-hosting/configuration/telemetry',
         permanent: true,
       },
       {

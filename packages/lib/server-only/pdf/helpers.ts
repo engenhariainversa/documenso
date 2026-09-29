@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { generateTemplateRecipientPlaceholderEmail } from '@documenso/lib/constants/template';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { FontLibrary } from '@documenso/skia-canvas';
 import type { Recipient } from '@prisma/client';
@@ -137,7 +138,7 @@ const extractRecipientPlaceholder = (placeholder: string): RecipientPlaceholderI
   const recipientIndex = Number(indexMatch[1]);
 
   return {
-    email: `recipient.${recipientIndex}@documenso.com`,
+    email: generateTemplateRecipientPlaceholderEmail(recipientIndex),
     name: `Recipient ${recipientIndex}`,
     recipientIndex,
   };
