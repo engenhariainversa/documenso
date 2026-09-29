@@ -31,8 +31,8 @@ A troca para o domínio próprio do Docverse depois é só: novo hostname no tú
 
 - `database`: `postgres:16-alpine`, volume `docverse-db`, healthcheck `pg_isready`, sem portas.
 - `app`: build de `docker/Dockerfile` (imagem `docverse:latest`), `container_name: docverse-app`, `env_file: ../../.env.prod`, monta `secrets/cert.p12` read-only, rede `default` + rede externa `proxy`, **sem portas publicadas**, `restart: unless-stopped`, depende do `database` saudável. As migrações rodam no start (o `docker/start.sh` do upstream já executa `prisma migrate deploy`).
-- `mailpit`: `axllent/mailpit`, sem portas publicadas. Foi o SMTP provisório até 2026-09-29; desde então o app envia pelo Mailgun e o mailpit só guarda os e-mails antigos (remoção em PR separado). UI acessível só via `docker exec`/túnel SSH.
-- Profile `prod` em `app`, `database` e `mailpit`, seguindo o padrão do deploy-kit.
+- O `mailpit` (`axllent/mailpit`) foi o SMTP provisório até 2026-09-29 e **não faz mais parte do compose**: foi removido no PR #6 e o container não existe mais em produção (conferido em 2026-09-29). O app envia pelo Mailgun (ver "E-mail (SMTP)").
+- Profile `prod` em `app` e `database`, seguindo o padrão do deploy-kit.
 
 ### Variáveis (`.env.prod`)
 
@@ -83,6 +83,6 @@ Conferir: o app não registra a resposta do SMTP. Para testar, disparar um reenv
 
 ## Pendências (para o usuário)
 
-- **SMTP real:** resolvido (Mailgun do termhub, remetente `Docverse <contato@8020digital.com.br>`). Falta: remover o mailpit do compose (PR separado) e, se quiserem remetente `@docverse.termhub.dev` ou no domínio próprio, verificar esse domínio no Mailgun (DNS). O limite de envio do plano Mailgun é dividido com o termhub.
+- **SMTP real:** resolvido (Mailgun do termhub, remetente `Docverse <contato@8020digital.com.br>`). O mailpit já foi removido do compose (PR #6). Falta só, se quiserem remetente `@docverse.termhub.dev` ou no domínio próprio, verificar esse domínio no Mailgun (DNS). O limite de envio do plano Mailgun é dividido com o termhub.
 - **Cadastro aberto:** qualquer pessoa pode criar conta em docverse.termhub.dev. Decidir se fecha (`NEXT_PUBLIC_DISABLE_SIGNUP=true`) até o lançamento.
 - **Certificado de selagem definitivo** (e-CNPJ A1 ou via sub-projeto 5).
