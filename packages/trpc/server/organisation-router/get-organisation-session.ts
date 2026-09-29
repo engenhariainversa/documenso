@@ -32,6 +32,11 @@ export const getOrganisationSession = async ({
       organisationClaim: true,
       organisationGlobalSettings: true,
       subscription: true,
+      cloudSubscription: {
+        select: {
+          currentPeriodEnd: true,
+        },
+      },
       groups: {
         where: {
           organisationGroupMembers: {

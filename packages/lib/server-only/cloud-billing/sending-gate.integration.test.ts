@@ -108,7 +108,7 @@ describe.skipIf(!hasTestDatabase)('subscription gate on the sending paths', () =
         directTemplateToken,
         signedFieldValues: [],
         templateUpdatedAt: new Date(),
-        requestMetadata: {},
+        requestMetadata: REQUEST_METADATA,
       }),
     );
 

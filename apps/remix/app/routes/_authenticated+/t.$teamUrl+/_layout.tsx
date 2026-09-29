@@ -1,7 +1,9 @@
 import { useChildRouteFlags } from '@documenso/lib/client-only/hooks/use-child-route-flags';
 import { LimitsProvider } from '@documenso/lib/client-only/providers/limits';
 import { useOptionalCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
+import { IS_CLOUD_BILLING_ENABLED } from '@documenso/lib/constants/cloud-billing';
 import { DEFAULT_MINIMUM_ENVELOPE_ITEM_COUNT, UNLIMITED_LIMITS } from '@documenso/lib/constants/limits';
+import { getCloudSubscriptionLimits } from '@documenso/lib/universal/cloud-billing/subscription-state';
 import { isOrganisationPendingPayment } from '@documenso/lib/utils/billing';
 import { TrpcProvider } from '@documenso/trpc/react';
 import { cn } from '@documenso/ui/lib/utils';
@@ -26,6 +28,13 @@ export default function Layout() {
       return undefined;
     }
 
+    // Docverse Cloud: the subscription never lowers the quotas, it only decides
+    // whether documents can be sent.
+    const subscription = getCloudSubscriptionLimits({
+      isBillingEnabled: IS_CLOUD_BILLING_ENABLED(),
+      currentPeriodEnd: organisation.cloudSubscription?.currentPeriodEnd,
+    });
+
     const isRestricted =
       (organisation.subscription && organisation.subscription.status === SubscriptionStatus.INACTIVE) ||
       isOrganisationPendingPayment(organisation);
@@ -43,6 +52,7 @@ export default function Layout() {
           directTemplates: 0,
         },
         maximumEnvelopeItemCount: 0,
+        subscription,
       };
     }
 
@@ -50,6 +60,7 @@ export default function Layout() {
       quota: UNLIMITED_LIMITS,
       remaining: UNLIMITED_LIMITS,
       maximumEnvelopeItemCount: DEFAULT_MINIMUM_ENVELOPE_ITEM_COUNT,
+      subscription,
     };
   }, [organisation]);
 

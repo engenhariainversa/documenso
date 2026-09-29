@@ -4,6 +4,7 @@ import type { OrganisationMemberRole, TeamMemberRole } from '@prisma/client';
 import {
   BracesIcon,
   Building2Icon,
+  CreditCardIcon,
   Globe2Icon,
   GroupIcon,
   LockIcon,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { FaUsers } from 'react-icons/fa6';
+import { IS_CLOUD_BILLING_ENABLED } from '../constants/cloud-billing';
 import { canExecuteOrganisationAction } from './organisations';
 import { canExecuteTeamAction } from './teams';
 
@@ -69,6 +71,12 @@ export const getSettingsNavGroups = ({
 }: GetSettingsNavGroupsArgs): SettingsNavGroups => {
   const canManageOrg =
     organisation !== null && canExecuteOrganisationAction('MANAGE_ORGANISATION', organisation.currentOrganisationRole);
+
+  // Docverse Cloud only: the plan page does not exist on self-hosted instances.
+  const canManageCloudBilling =
+    IS_CLOUD_BILLING_ENABLED() &&
+    organisation !== null &&
+    canExecuteOrganisationAction('MANAGE_BILLING', organisation.currentOrganisationRole);
 
   const canManageTeam = team !== null && canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
 
@@ -137,6 +145,16 @@ export const getSettingsNavGroups = ({
             label: msg`Groups`,
             icon: GroupIcon,
           },
+          ...(canManageCloudBilling
+            ? [
+                {
+                  key: 'billing',
+                  path: `/o/${organisation.url}/settings/billing`,
+                  label: msg`Plan`,
+                  icon: CreditCardIcon,
+                },
+              ]
+            : []),
         ],
       }
     : null;

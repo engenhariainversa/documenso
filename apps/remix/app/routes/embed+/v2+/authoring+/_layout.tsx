@@ -136,6 +136,7 @@ export default function AuthoringLayout() {
     organisationClaim,
     teams: [team],
     subscription: null,
+    cloudSubscription: null,
     currentOrganisationRole: OrganisationMemberRole.MEMBER,
   };
 

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeNextPeriod, getCloudSubscriptionState, isSendingAllowedForState } from './subscription-state';
+import {
+  computeNextPeriod,
+  getCloudSubscriptionLimits,
+  getCloudSubscriptionState,
+  isSendingAllowedForState,
+} from './subscription-state';
 
 const NOW = new Date('2026-10-15T12:00:00.000Z');
 
@@ -132,5 +137,51 @@ describe('computeNextPeriod', () => {
     });
 
     expect(periodEnd.toISOString()).toBe('2027-01-15T10:00:00.000Z');
+  });
+});
+
+describe('getCloudSubscriptionLimits', () => {
+  it('allows sending when billing is disabled', () => {
+    expect(getCloudSubscriptionLimits({ isBillingEnabled: false, currentPeriodEnd: null, now: NOW })).toEqual({
+      state: 'DISABLED',
+      isSendingAllowed: true,
+    });
+  });
+
+  it('blocks sending without a subscription', () => {
+    expect(getCloudSubscriptionLimits({ isBillingEnabled: true, currentPeriodEnd: undefined, now: NOW })).toEqual({
+      state: 'NONE',
+      isSendingAllowed: false,
+    });
+  });
+
+  it('allows sending with an active subscription', () => {
+    const limits = getCloudSubscriptionLimits({
+      isBillingEnabled: true,
+      currentPeriodEnd: new Date('2026-11-01T00:00:00.000Z'),
+      now: NOW,
+    });
+
+    expect(limits).toEqual({ state: 'ACTIVE', isSendingAllowed: true });
+  });
+
+  it('reads a period end that arrived as an ISO string', () => {
+    const limits = getCloudSubscriptionLimits({
+      isBillingEnabled: true,
+      currentPeriodEnd: '2026-11-01T00:00:00.000Z',
+      now: NOW,
+    });
+
+    expect(limits).toEqual({ state: 'ACTIVE', isSendingAllowed: true });
+  });
+
+  it('blocks sending when the period end cannot be read', () => {
+    const limits = getCloudSubscriptionLimits({
+      isBillingEnabled: true,
+      currentPeriodEnd: 'not a date',
+      now: NOW,
+    });
+
+    expect(limits).toEqual({ state: 'NONE', isSendingAllowed: false });
   });
 });

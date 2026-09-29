@@ -55,6 +55,41 @@ export const isSendingAllowedForState = (state: TCloudSubscriptionState) => {
   return state === 'DISABLED' || state === 'ACTIVE' || state === 'GRACE';
 };
 
+export type TCloudSubscriptionLimits = {
+  state: TCloudSubscriptionState;
+  isSendingAllowed: boolean;
+};
+
+export type GetCloudSubscriptionLimitsOptions = {
+  isBillingEnabled: boolean;
+
+  /**
+   * Accepts an ISO string too, since the value can reach the browser serialised.
+   */
+  currentPeriodEnd: Date | string | null | undefined;
+  now?: Date;
+};
+
+/**
+ * The subscription state together with what it allows.
+ */
+export const getCloudSubscriptionLimits = ({
+  isBillingEnabled,
+  currentPeriodEnd,
+  now,
+}: GetCloudSubscriptionLimitsOptions): TCloudSubscriptionLimits => {
+  const state = getCloudSubscriptionState({
+    isBillingEnabled,
+    currentPeriodEnd: typeof currentPeriodEnd === 'string' ? new Date(currentPeriodEnd) : currentPeriodEnd,
+    now,
+  });
+
+  return {
+    state,
+    isSendingAllowed: isSendingAllowedForState(state),
+  };
+};
+
 export type ComputeNextPeriodOptions = {
   now: Date;
   currentPeriodEnd: Date | null | undefined;
