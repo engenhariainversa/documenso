@@ -20,18 +20,6 @@ services:
     volumes:
       - docverse-db:/var/lib/postgresql/data
 
-  # SMTP provisório: segura os e-mails até termos um provedor real (ver spec, "Pendências").
-  mailpit:
-    profiles: [prod]
-    image: axllent/mailpit:latest
-    container_name: docverse-mailpit
-    restart: unless-stopped
-    volumes:
-      - docverse-mail:/data
-    environment:
-      MP_DATABASE: /data/mailpit.db
-      MP_MAX_MESSAGES: 5000
-
   app:
     profiles: [prod]
     build:
@@ -43,8 +31,6 @@ services:
     depends_on:
       database:
         condition: service_healthy
-      mailpit:
-        condition: service_started
     env_file: ../../.env.prod
     volumes:
       - ../../../secrets/cert.p12:/opt/docverse/cert.p12:ro
@@ -54,7 +40,6 @@ services:
 
 volumes:
   docverse-db:
-  docverse-mail:
 
 networks:
   proxy:
