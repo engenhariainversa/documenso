@@ -22,6 +22,7 @@ import { requestId } from 'hono/request-id';
 import type { Logger } from 'pino';
 
 import { aiRoute } from './api/ai/route';
+import { billingWebhookRoute } from './api/billing/webhook';
 import { downloadRoute } from './api/download/download';
 import { filesRoute } from './api/files/files';
 import { type AppContext, appContext } from './context';
@@ -109,6 +110,9 @@ app.route('/api/files', filesRoute);
 // AI route.
 app.use('/api/ai/*', aiRateLimitMiddleware);
 app.route('/api/ai', aiRoute);
+
+// Cloud billing webhooks. Answers 404 unless cloud billing is enabled.
+app.route('/api/billing/opapingou', billingWebhookRoute);
 
 // API servers.
 app.route('/api/v1', tsRestHonoApp);

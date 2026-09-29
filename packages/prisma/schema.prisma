@@ -350,6 +350,8 @@ model CloudSubscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Start of the uninterrupted coverage. Renewing before the end keeps it; renewing
+  /// after a lapse moves it to the payment date.
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
 

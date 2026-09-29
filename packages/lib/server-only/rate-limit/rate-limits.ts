@@ -92,6 +92,12 @@ export const syncSubscriptionRateLimit = createRateLimit({
   window: '15m',
 });
 
+export const cloudBillingWebhookRateLimit = createRateLimit({
+  action: 'billing.cloud-webhook',
+  max: 120,
+  window: '1m',
+});
+
 // ---- API (Tier 4 - Standard) ----
 
 export const apiV1RateLimit = createRateLimit({

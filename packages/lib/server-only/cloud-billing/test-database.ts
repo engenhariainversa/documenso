@@ -31,10 +31,56 @@ export const assertDisposableDatabaseUrl = (databaseUrl: string) => {
   }
 };
 
-export const resetCloudBillingTables = async () => {
-  await prisma.cloudBillingWebhookEvent.deleteMany();
-  await prisma.cloudSubscriptionCharge.deleteMany();
-  await prisma.cloudSubscription.deleteMany();
+/**
+ * Removes the billing rows of the given organisations only.
+ *
+ * Test files run in parallel against the same database, so a test must never
+ * delete or count rows that belong to another file's organisation.
+ */
+export const resetCloudBillingForOrganisations = async (organisationIds: string[]) => {
+  const charges = await prisma.cloudSubscriptionCharge.findMany({
+    where: {
+      organisationId: {
+        in: organisationIds,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  await prisma.cloudBillingWebhookEvent.deleteMany({
+    where: {
+      OR: [
+        {
+          chargeId: {
+            in: charges.map((charge) => charge.id),
+          },
+        },
+        ...organisationIds.map((organisationId) => ({
+          eventId: {
+            startsWith: `${organisationId}:`,
+          },
+        })),
+      ],
+    },
+  });
+
+  await prisma.cloudSubscriptionCharge.deleteMany({
+    where: {
+      organisationId: {
+        in: organisationIds,
+      },
+    },
+  });
+
+  await prisma.cloudSubscription.deleteMany({
+    where: {
+      organisationId: {
+        in: organisationIds,
+      },
+    },
+  });
 };
 
 export const createTestOrganisation = async () => {

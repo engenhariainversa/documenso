@@ -23,7 +23,11 @@ import {
   startSimulatedOpapingouApi,
   type TSimulatedOpapingouApi,
 } from './providers/opapingou/simulated-opapingou-api';
-import { assertDisposableDatabaseUrl, createTestOrganisation, resetCloudBillingTables } from './test-database';
+import {
+  assertDisposableDatabaseUrl,
+  createTestOrganisation,
+  resetCloudBillingForOrganisations,
+} from './test-database';
 
 const NOW = new Date('2026-10-15T12:00:00.000Z');
 
@@ -42,6 +46,8 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
   let organisationId: string;
   let userId: number;
 
+  const countCharges = async () => await prisma.cloudSubscriptionCharge.count({ where: { organisationId } });
+
   beforeAll(async () => {
     assertDisposableDatabaseUrl(process.env.CLOUD_BILLING_TEST_DATABASE_URL ?? '');
 
@@ -56,7 +62,7 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
   });
 
   beforeEach(async () => {
-    await resetCloudBillingTables();
+    await resetCloudBillingForOrganisations([organisationId]);
 
     api = await startSimulatedOpapingouApi();
 
@@ -102,7 +108,7 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
   it('does not create a subscription before payment', async () => {
     await createCloudSubscriptionCheckout({ organisationId, userId, now: NOW });
 
-    expect(await prisma.cloudSubscription.count()).toBe(0);
+    expect(await prisma.cloudSubscription.count({ where: { organisationId } })).toBe(0);
   });
 
   it('hands back the same pending charge on a second call', async () => {
@@ -111,7 +117,7 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
 
     expect(second.id).toBe(first.id);
     expect(api.requests).toHaveLength(1);
-    expect(await prisma.cloudSubscriptionCharge.count()).toBe(1);
+    expect(await countCharges()).toBe(1);
   });
 
   it('creates a single charge when two checkouts race', async () => {
@@ -122,7 +128,7 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
 
     expect(results.filter((result) => result.status === 'fulfilled').length).toBeGreaterThanOrEqual(1);
     expect(api.requests).toHaveLength(1);
-    expect(await prisma.cloudSubscriptionCharge.count()).toBe(1);
+    expect(await countCharges()).toBe(1);
   });
 
   it('replaces a pending charge that already expired', async () => {
@@ -176,7 +182,7 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
     const error = await catchError(createCloudSubscriptionCheckout({ organisationId, userId, now: NOW }));
 
     expect(error.code).toBe(AppErrorCode.UNKNOWN_ERROR);
-    expect(await prisma.cloudSubscriptionCharge.count()).toBe(0);
+    expect(await countCharges()).toBe(0);
   });
 
   it('can start a checkout again after the provider failed', async () => {
@@ -196,7 +202,7 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
 
     expect(error.code).toBe(AppErrorCode.NOT_FOUND);
     expect(api.requests).toHaveLength(0);
-    expect(await prisma.cloudSubscriptionCharge.count()).toBe(0);
+    expect(await countCharges()).toBe(0);
   });
 
   it.each([
@@ -209,7 +215,7 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
 
     expect(error.code).toBe(AppErrorCode.NOT_SETUP);
     expect(api.requests).toHaveLength(0);
-    expect(await prisma.cloudSubscriptionCharge.count()).toBe(0);
+    expect(await countCharges()).toBe(0);
   });
 
   describe('getCloudSubscription', () => {
