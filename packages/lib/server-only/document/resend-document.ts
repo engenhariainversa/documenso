@@ -27,6 +27,7 @@ import { isDocumentCompleted } from '../../utils/document';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
+import { assertOrganisationCanSendDocuments } from '../cloud-billing/assert-organisation-can-send';
 import { buildEnvelopeEmailHeaders } from '../email/build-envelope-email-headers';
 import { getEmailContext } from '../email/get-email-context';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
@@ -93,6 +94,9 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
   if (!envelope) {
     throw new Error('Document not found');
   }
+
+  // Docverse Cloud: resending requires an active subscription. No-op when billing is disabled.
+  await assertOrganisationCanSendDocuments({ teamId: envelope.teamId });
 
   if (envelope.recipients.length === 0) {
     throw new Error('Document has no recipients');

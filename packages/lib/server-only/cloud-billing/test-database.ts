@@ -1,8 +1,10 @@
 import { prisma } from '@documenso/prisma';
-import { OrganisationType } from '@prisma/client';
+import { DocumentSource, DocumentStatus, EnvelopeType, OrganisationType } from '@prisma/client';
 
+import { SignatureLevel } from '../../types/signature-level';
 import { INTERNAL_CLAIM_ID } from '../../types/subscription';
-import { alphaid } from '../../universal/id';
+import { alphaid, prefixedId } from '../../universal/id';
+import { incrementDocumentId, incrementTemplateId } from '../envelope/increment-id';
 import { createOrganisation } from '../organisation/create-organisation';
 import { getSubscriptionClaim } from '../subscription/get-subscription-claim';
 import { createTeam } from '../team/create-team';
@@ -120,4 +122,49 @@ export const createTestOrganisation = async () => {
     organisation,
     team,
   };
+};
+
+export type CreateTestEnvelopeOptions = {
+  userId: number;
+  teamId: number;
+  type: EnvelopeType;
+  status?: DocumentStatus;
+};
+
+/**
+ * An envelope without recipients, items or fields.
+ *
+ * It is enough to tell whether a send was refused by the subscription gate or went
+ * past it: past the gate, sending fails on the missing recipients or items.
+ */
+export const createTestEnvelope = async ({
+  userId,
+  teamId,
+  type,
+  status = DocumentStatus.DRAFT,
+}: CreateTestEnvelopeOptions) => {
+  const documentMeta = await prisma.documentMeta.create({
+    data: {},
+  });
+
+  const secondaryId =
+    type === EnvelopeType.DOCUMENT
+      ? (await incrementDocumentId()).formattedDocumentId
+      : (await incrementTemplateId()).formattedTemplateId;
+
+  return await prisma.envelope.create({
+    data: {
+      id: prefixedId('envelope'),
+      secondaryId,
+      internalVersion: 1,
+      signatureLevel: SignatureLevel.SES,
+      type,
+      status,
+      source: type === EnvelopeType.DOCUMENT ? DocumentSource.DOCUMENT : DocumentSource.TEMPLATE,
+      title: '[TEST] Cloud billing',
+      documentMetaId: documentMeta.id,
+      userId,
+      teamId,
+    },
+  });
 };
