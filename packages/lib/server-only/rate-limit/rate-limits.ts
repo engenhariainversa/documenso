@@ -29,6 +29,15 @@ export const request2FAEmailRateLimit = createRateLimit({
   window: '15m',
 });
 
+// ---- Docverse waitlist (public form on the landing page, sends emails) ----
+
+export const waitlistJoinRateLimit = createRateLimit({
+  action: 'waitlist.join',
+  max: 5,
+  globalMax: 100,
+  window: '1h',
+});
+
 // ---- Auth (Tier 2 - Unauthenticated) ----
 
 export const loginRateLimit = createRateLimit({
