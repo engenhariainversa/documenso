@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getLandingSignupAction, isWaitlistEnabled, WAITLIST_CONSENT_VERSION } from './landing-waitlist';
+import { AppError, AppErrorCode } from '../errors/app-error';
+import { WAITLIST_DISPOSABLE_EMAIL_MESSAGE } from '../types/waitlist';
+import {
+  getLandingSignupAction,
+  getWaitlistFormErrorKind,
+  isWaitlistEnabled,
+  WAITLIST_CONSENT_VERSION,
+} from './landing-waitlist';
 
 describe('isWaitlistEnabled', () => {
   afterEach(() => {
@@ -43,5 +50,24 @@ describe('getLandingSignupAction', () => {
 describe('WAITLIST_CONSENT_VERSION', () => {
   it('is a date', () => {
     expect(WAITLIST_CONSENT_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe('getWaitlistFormErrorKind', () => {
+  it('maps the rate limit to its own message', () => {
+    const error = new AppError(AppErrorCode.TOO_MANY_REQUESTS);
+
+    expect(getWaitlistFormErrorKind(error)).toBe('rateLimited');
+  });
+
+  it('maps the disposable email refusal to its own message', () => {
+    const error = new AppError(AppErrorCode.INVALID_BODY, { message: WAITLIST_DISPOSABLE_EMAIL_MESSAGE });
+
+    expect(getWaitlistFormErrorKind(error)).toBe('disposableEmail');
+  });
+
+  it('treats anything else, including plain errors, as generic', () => {
+    expect(getWaitlistFormErrorKind(new AppError(AppErrorCode.INVALID_BODY))).toBe('generic');
+    expect(getWaitlistFormErrorKind(new Error('network'))).toBe('generic');
   });
 });

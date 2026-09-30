@@ -13,6 +13,7 @@ import { recipientRouter } from './recipient-router/router';
 import { teamRouter } from './team-router/router';
 import { templateRouter } from './template-router/router';
 import { router } from './trpc';
+import { waitlistRouter } from './waitlist-router/router';
 import { webhookRouter } from './webhook-router/router';
 
 export const appRouter = router({
@@ -31,6 +32,7 @@ export const appRouter = router({
   webhook: webhookRouter,
   embeddingPresign: embeddingPresignRouter,
   billing: billingRouter,
+  waitlist: waitlistRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -3,17 +3,13 @@ import { prisma } from '@documenso/prisma';
 import { isDisposableEmail } from '../../constants/auth';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { jobsClient } from '../../jobs/client';
-import type { TJoinWaitlistRequest } from '../../types/waitlist';
+import { type TJoinWaitlistRequest, WAITLIST_DISPOSABLE_EMAIL_MESSAGE } from '../../types/waitlist';
 import { isWaitlistEnabled } from '../../utils/landing-waitlist';
 import { verifyCaptchaToken } from '../captcha/verify-captcha';
 import { waitlistJoinRateLimit } from '../rate-limit/rate-limits';
 import { normalizeWaitlistPhone } from './normalize-phone';
 
-/**
- * Error message of the disposable-email refusal. The landing page matches on it to show
- * a specific text; every other refusal is shown as a generic error.
- */
-export const WAITLIST_DISPOSABLE_EMAIL_MESSAGE = 'WAITLIST_DISPOSABLE_EMAIL';
+export { WAITLIST_DISPOSABLE_EMAIL_MESSAGE };
 
 export type JoinWaitlistOptions = {
   input: TJoinWaitlistRequest;

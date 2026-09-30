@@ -12,6 +12,12 @@ export const WAITLIST_LOCALES = ['pt-BR', 'en'] as const;
 export type WaitlistLocale = (typeof WAITLIST_LOCALES)[number];
 
 /**
+ * Error message of the disposable-email refusal. The landing page matches on it to show
+ * a specific text; every other refusal is shown as a generic error.
+ */
+export const WAITLIST_DISPOSABLE_EMAIL_MESSAGE = 'WAITLIST_DISPOSABLE_EMAIL';
+
+/**
  * A phone part typed by a person: separators are dropped, then the digit count is checked.
  */
 const zPhoneDigits = (min: number, max: number) =>

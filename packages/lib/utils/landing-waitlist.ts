@@ -1,3 +1,5 @@
+import { AppError, AppErrorCode } from '../errors/app-error';
+import { WAITLIST_DISPOSABLE_EMAIL_MESSAGE } from '../types/waitlist';
 import { env } from './env';
 
 /**
@@ -28,4 +30,23 @@ export const getLandingSignupAction = ({
   }
 
   return isWaitlistEnabled ? 'waitlist' : 'none';
+};
+
+export type WaitlistFormErrorKind = 'consent' | 'rateLimited' | 'disposableEmail' | 'generic';
+
+/**
+ * Which message the landing form shows for a failed sign-up.
+ */
+export const getWaitlistFormErrorKind = (error: unknown): WaitlistFormErrorKind => {
+  const appError = AppError.parseError(error);
+
+  if (appError.code === AppErrorCode.TOO_MANY_REQUESTS) {
+    return 'rateLimited';
+  }
+
+  if (appError.message === WAITLIST_DISPOSABLE_EMAIL_MESSAGE) {
+    return 'disposableEmail';
+  }
+
+  return 'generic';
 };
