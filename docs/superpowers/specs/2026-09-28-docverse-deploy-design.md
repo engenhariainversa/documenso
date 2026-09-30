@@ -38,7 +38,7 @@ A troca para o domínio próprio do Docverse depois é só: novo hostname no tú
 
 Geradas uma vez com `openssl rand`: `NEXTAUTH_SECRET`, `NEXT_PRIVATE_ENCRYPTION_KEY` (32+ chars), `NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY`, senha do Postgres. Fixas: `NEXT_PUBLIC_WEBAPP_URL=https://docverse.termhub.dev`, `NEXT_PRIVATE_INTERNAL_WEBAPP_URL=http://localhost:3000`, `NEXT_PUBLIC_UPLOAD_TRANSPORT=database`, `NEXT_PRIVATE_SIGNING_TRANSPORT=local`, `NEXT_PRIVATE_SIGNING_LOCAL_FILE_PATH=/opt/docverse/cert.p12`, `NEXT_PRIVATE_SIGNING_PASSPHRASE`, SMTP (ver "E-mail (SMTP)"), `NEXT_PUBLIC_DISABLE_SIGNUP` vazio (cadastro aberto até decidirmos).
 
-Certificado de selagem provisório: autoassinado (`CN=Docverse`, RSA 2048, 3 anos). Documentos selados com ele mostram assinatura válida porém de emissor não confiável; o certificado definitivo vem com o sub-projeto 5 ou com um e-CNPJ.
+Certificado de selagem provisório: autoassinado (`CN=Docverse`, RSA 2048, 3 anos). Documentos selados com ele mostram assinatura válida porém de emissor não confiável; o certificado definitivo é um e-CNPJ A1 (decisão de 2026-09-30, DOC-22); a troca segue `docker/docverse/seal-cert/README.md`. A assinatura qualificada por signatário (sub-projeto 5) é outra assinatura e convive com o selo.
 
 ### E-mail (SMTP)
 
@@ -85,4 +85,4 @@ Conferir: o app não registra a resposta do SMTP. Para testar, disparar um reenv
 
 - **SMTP real:** resolvido (Mailgun do termhub, remetente `Docverse <contato@8020digital.com.br>`). O mailpit já foi removido do compose (PR #6). Falta só, se quiserem remetente `@docverse.termhub.dev` ou no domínio próprio, verificar esse domínio no Mailgun (DNS). O limite de envio do plano Mailgun é dividido com o termhub.
 - **Cadastro aberto:** qualquer pessoa pode criar conta em docverse.termhub.dev. Decidir se fecha (`NEXT_PUBLIC_DISABLE_SIGNUP=true`) até o lançamento.
-- **Certificado de selagem definitivo** (e-CNPJ A1 ou via sub-projeto 5).
+- **Certificado de selagem definitivo**: e-CNPJ A1, aguardando a entrega do `.pfx` (procedimento em `docker/docverse/seal-cert/README.md`).
