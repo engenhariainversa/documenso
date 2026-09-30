@@ -14861,3 +14861,21 @@ msgstr "Vamos enviar um e-mail quando o seu acesso estiver liberado. Nada mais s
 #: packages/lib/jobs/definitions/emails/send-waitlist-joined-emails.handler.ts
 msgid "You are on the Docverse waitlist"
 msgstr "Você está na lista de espera do Docverse"
+
+#: packages/email/template-components/template-waitlist-invite.tsx
+msgid "Hi {name}, thank you for waiting. Your account has been created; set your password to get started."
+msgstr "Olá, {name}. Obrigado por esperar. Sua conta foi criada; defina a senha para começar."
+
+#: packages/email/template-components/template-waitlist-invite.tsx
+msgid "Set password"
+msgstr "Definir senha"
+
+#: packages/email/template-components/template-waitlist-invite.tsx
+msgid "You can also copy and paste this link into your browser: {setPasswordLink} (the link expires in 7 days; after that, use \"Forgot password\" on the sign in page)"
+msgstr "Você também pode copiar e colar este link no navegador: {setPasswordLink} (o link vence em 7 dias; depois disso, use \"Esqueci minha senha\" na tela de entrada)"
+
+#: packages/email/template-components/template-waitlist-invite.tsx
+#: packages/email/templates/waitlist-invite.tsx
+#: packages/lib/jobs/definitions/emails/send-waitlist-invite-email.handler.ts
+msgid "Your Docverse access is ready"
+msgstr "Seu acesso ao Docverse foi liberado"
