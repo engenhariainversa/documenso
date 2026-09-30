@@ -14818,3 +14818,46 @@ msgstr "por mês"
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
 msgid "Subscribe"
 msgstr "Assinar"
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+msgid "Hi {name}, we saved your name, email ({email}) and phone ({phone}) to let you know when access opens."
+msgstr "Olá, {name}. Guardamos seu nome, e-mail ({email}) e telefone ({phone}) para avisar quando o acesso for liberado."
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "New waitlist entry"
+msgstr "Nova inscrição na lista de espera"
+
+#. placeholder {0}: entry.name
+#: packages/lib/jobs/definitions/emails/send-waitlist-joined-emails.handler.ts
+msgid "New waitlist entry: {0}"
+msgstr "Nova inscrição na lista de espera: {0}"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "New waitlist entry: {name}"
+msgstr "Nova inscrição na lista de espera: {name}"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "Open the waitlist"
+msgstr "Abrir a lista de espera"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "Phone"
+msgstr "Telefone"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "Signed up at"
+msgstr "Inscrito em"
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+msgid "To be removed from the list, write to <0>{SUPPORT_EMAIL}</0>."
+msgstr "Para sair da lista, escreva para <0>{SUPPORT_EMAIL}</0>."
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+msgid "We will send you an email when your access is ready. Nothing else will be sent."
+msgstr "Vamos enviar um e-mail quando o seu acesso estiver liberado. Nada mais será enviado."
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+#: packages/email/templates/waitlist-joined.tsx
+#: packages/lib/jobs/definitions/emails/send-waitlist-joined-emails.handler.ts
+msgid "You are on the Docverse waitlist"
+msgstr "Você está na lista de espera do Docverse"

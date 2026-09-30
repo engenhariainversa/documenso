@@ -14651,3 +14651,46 @@ msgstr "Zoom in"
 #: packages/ui/primitives/signature-pad/signature-pad-upload.tsx
 msgid "Zoom out"
 msgstr "Zoom out"
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+msgid "Hi {name}, we saved your name, email ({email}) and phone ({phone}) to let you know when access opens."
+msgstr "Hi {name}, we saved your name, email ({email}) and phone ({phone}) to let you know when access opens."
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "New waitlist entry"
+msgstr "New waitlist entry"
+
+#. placeholder {0}: entry.name
+#: packages/lib/jobs/definitions/emails/send-waitlist-joined-emails.handler.ts
+msgid "New waitlist entry: {0}"
+msgstr "New waitlist entry: {0}"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "New waitlist entry: {name}"
+msgstr "New waitlist entry: {name}"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "Open the waitlist"
+msgstr "Open the waitlist"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "Phone"
+msgstr "Phone"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "Signed up at"
+msgstr "Signed up at"
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+msgid "To be removed from the list, write to <0>{SUPPORT_EMAIL}</0>."
+msgstr "To be removed from the list, write to <0>{SUPPORT_EMAIL}</0>."
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+msgid "We will send you an email when your access is ready. Nothing else will be sent."
+msgstr "We will send you an email when your access is ready. Nothing else will be sent."
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+#: packages/email/templates/waitlist-joined.tsx
+#: packages/lib/jobs/definitions/emails/send-waitlist-joined-emails.handler.ts
+msgid "You are on the Docverse waitlist"
+msgstr "You are on the Docverse waitlist"
