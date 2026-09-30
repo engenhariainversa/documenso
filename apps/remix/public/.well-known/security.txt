@@ -1,14 +1,5 @@
-# Report security vulnerabilities privately via GitHub Security Advisories (preferred).
-Contact: https://github.com/documenso/documenso/security/advisories/new
+# Report security vulnerabilities privately by email.
+Contact: mailto:contato@8020digital.com.br
 
-# Alternatively, report critical issues privately by email.
-Contact: mailto:security@documenso.com
-
-# Security policy
-Policy: https://github.com/documenso/documenso/security/policy
-
-# General (non-security) issues
-Contact: https://github.com/documenso/documenso/issues/new?assignees=&labels=bug&projects=&template=bug-report.yml
-
-Preferred-Languages: en
-Canonical: https://documenso.com/.well-known/security.txt
+Preferred-Languages: pt-BR, en
+Canonical: https://docverse.termhub.dev/.well-known/security.txt
