@@ -21,11 +21,8 @@ import { signOpapingouWebhookBody } from './providers/opapingou/opapingou-webhoo
 
 const SECRET = 'webhook-secret-for-tests';
 
-const RAW_BODY = JSON.stringify({
-  id: 'evt_1',
-  evento: 'pingou',
-  cobranca: { id: 'cob_1', referencia: 'charge_1', valor: '99.90' },
-});
+// The provider has not decided the body of its webhooks; any JSON object will do here.
+const RAW_BODY = JSON.stringify({ type: 'charge.paid', data: { amountCents: 9990 } });
 
 const sign = (rawBody: string) => signOpapingouWebhookBody({ rawBody, secret: SECRET });
 
@@ -80,7 +77,7 @@ describe('handleOpapingouWebhook without touching the database', () => {
 
   it('is unauthorised when the body was changed after signing', async () => {
     const result = await handleOpapingouWebhook({
-      rawBody: RAW_BODY.replace('99.90', '0.01'),
+      rawBody: RAW_BODY.replace('9990', '1'),
       signature: sign(RAW_BODY),
     });
 
@@ -99,8 +96,9 @@ describe('handleOpapingouWebhook without touching the database', () => {
 
   it.each([
     ['invalid JSON', '{not json'],
-    ['an event without a name', JSON.stringify({ id: 'evt_1' })],
     ['an empty body', ''],
+    ['a JSON array', '[]'],
+    ['JSON null', 'null'],
   ])('is a bad request for %s with a valid signature', async (_label, rawBody) => {
     const result = await handleOpapingouWebhook({ rawBody, signature: sign(rawBody) });
 

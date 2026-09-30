@@ -15,7 +15,7 @@ import { prisma } from '@documenso/prisma';
 import { CloudSubscriptionChargeStatus } from '@prisma/client';
 
 import { createCloudSubscriptionCheckout } from './create-checkout';
-import { handleOpapingouWebhook } from './handle-webhook';
+import { CLOUD_BILLING_CONFIRMATION_WINDOW_DAYS, handleOpapingouWebhook } from './handle-webhook';
 import {
   SIMULATED_OPAPINGOU_API_KEY,
   SIMULATED_OPAPINGOU_WEBHOOK_SECRET,
@@ -28,66 +28,57 @@ import {
   resetCloudBillingForOrganisations,
 } from './test-database';
 
-const CHECKOUT_AT = new Date('2026-10-15T12:00:00.000Z');
-const PAID_AT = new Date('2026-10-15T12:05:00.000Z');
+// Later than the dates of the other integration files, which share the database: the
+// webhook reads back every recent unpaid charge, whatever its organisation.
+const FIRST_DATE_OF_THIS_FILE = new Date('2027-01-01T00:00:00.000Z');
+const CHECKOUT_AT = new Date('2027-03-15T12:00:00.000Z');
+const PAID_AT = new Date('2027-03-15T12:05:00.000Z');
 
 describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
   let api: TSimulatedOpapingouApi;
   let organisationId: string;
   let userId: number;
 
-  const startCheckout = async (now = CHECKOUT_AT) => {
-    const checkout = await createCloudSubscriptionCheckout({ organisationId, userId, now });
+  const startCheckout = async (now = CHECKOUT_AT, isReplacement = false) => {
+    const checkout = await createCloudSubscriptionCheckout({ organisationId, userId, now, isReplacement });
 
     return await prisma.cloudSubscriptionCharge.findUniqueOrThrow({ where: { id: checkout.id } });
   };
 
-  type SendPaymentOptions = {
-    eventId?: string | null;
-    chargeId?: string | null;
-    reference?: string | null;
-    amount?: string | number;
-    eventName?: string;
+  const payAtProvider = (charge: { providerChargeId: string | null }, amountCents?: number) => {
+    api.updateCharge(charge.providerChargeId ?? '', { status: 'PAID', amountCents });
+  };
+
+  type NotifyOptions = {
+    delivery?: string;
+    body?: Record<string, unknown>;
     now?: Date;
   };
 
-  // Event ids are scoped by organisation, since test files share the database.
-  const scopedEventId = (eventId: string) => `${organisationId}:${eventId}`;
-
-  // What the handler reports and stores: the provider's id prefixed by the event type.
-  const storedEventId = (eventId: string, eventName = 'pingou') => `${eventName}:${scopedEventId(eventId)}`;
-
-  const countSubscriptions = async () => await prisma.cloudSubscription.count({ where: { organisationId } });
-
-  const findEvents = async () =>
-    await prisma.cloudBillingWebhookEvent.findMany({
-      where: { eventId: { contains: `:${organisationId}:` } },
-    });
-
-  const sendPayment = async ({
-    eventId = 'evt_1',
-    chargeId,
-    reference,
-    amount = '99.90',
-    eventName = 'pingou',
-    now = PAID_AT,
-  }: SendPaymentOptions) => {
-    const { rawBody, signature } = api.buildSignedWebhook({
-      ...(eventId === null ? {} : { id: scopedEventId(eventId) }),
-      evento: eventName,
-      cobranca: {
-        ...(chargeId ? { id: chargeId } : {}),
-        ...(reference ? { referencia: reference } : {}),
-        valor: amount,
-        status: 'pingou',
-      },
-    });
+  /**
+   * An authentic delivery. Its body is arbitrary: the provider has not documented it
+   * and the handler does not read it. The organisation id keeps the hash of the body
+   * apart from other test files.
+   */
+  const notify = async ({ delivery = 'delivery_1', body, now = PAID_AT }: NotifyOptions = {}) => {
+    const { rawBody, signature } = api.buildSignedWebhook(body ?? { delivery: `${organisationId}:${delivery}` });
 
     return await handleOpapingouWebhook({ rawBody, signature, now });
   };
 
+  const findCharge = async (id: string) => await prisma.cloudSubscriptionCharge.findUniqueOrThrow({ where: { id } });
+
+  const findSubscription = async () => await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
+
+  const countSubscriptions = async () => await prisma.cloudSubscription.count({ where: { organisationId } });
+
+  const chargeReads = () => api.requests.filter((request) => request.method === 'GET');
+
   beforeAll(async () => {
     assertDisposableDatabaseUrl(process.env.CLOUD_BILLING_TEST_DATABASE_URL ?? '');
+
+    // Charges left by earlier runs of this file, the only one that uses these dates.
+    await prisma.cloudSubscriptionCharge.deleteMany({ where: { createdAt: { gte: FIRST_DATE_OF_THIS_FILE } } });
 
     const { organisation, user } = await createTestOrganisation();
 
@@ -116,219 +107,131 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
     await api.close();
   });
 
-  it('activates the subscription for one month when the charge is paid', async () => {
+  it('activates the subscription for one month when the provider reports the charge paid', async () => {
     const charge = await startCheckout();
 
-    const result = await sendPayment({ chargeId: charge.providerChargeId, reference: charge.id });
+    payAtProvider(charge);
 
-    expect(result).toEqual({ status: 200, outcome: 'PROCESSED', eventId: storedEventId('evt_1'), chargeId: charge.id });
+    const result = await notify();
 
-    const paidCharge = await prisma.cloudSubscriptionCharge.findUniqueOrThrow({ where: { id: charge.id } });
-    const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
+    expect(result).toEqual({
+      status: 200,
+      outcome: 'PROCESSED',
+      eventId: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      chargeId: charge.id,
+    });
+
+    const paidCharge = await findCharge(charge.id);
+    const subscription = await findSubscription();
+
+    expect(chargeReads().map((request) => request.path)).toContain(`/v1/charges/${charge.providerChargeId}`);
 
     expect(paidCharge.status).toBe(CloudSubscriptionChargeStatus.PAID);
-    expect(paidCharge.paidAt?.toISOString()).toBe('2026-10-15T12:05:00.000Z');
-    expect(paidCharge.periodStart?.toISOString()).toBe('2026-10-15T12:05:00.000Z');
-    expect(paidCharge.periodEnd?.toISOString()).toBe('2026-11-15T12:05:00.000Z');
+    expect(paidCharge.paidAt?.toISOString()).toBe('2027-03-15T12:05:00.000Z');
+    expect(paidCharge.periodStart?.toISOString()).toBe('2027-03-15T12:05:00.000Z');
+    expect(paidCharge.periodEnd?.toISOString()).toBe('2027-04-15T12:05:00.000Z');
 
-    expect(subscription.currentPeriodStart.toISOString()).toBe('2026-10-15T12:05:00.000Z');
-    expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-11-15T12:05:00.000Z');
+    expect(subscription.currentPeriodStart.toISOString()).toBe('2027-03-15T12:05:00.000Z');
+    expect(subscription.currentPeriodEnd.toISOString()).toBe('2027-04-15T12:05:00.000Z');
   });
 
-  it('records the handled event', async () => {
+  it('records the notification', async () => {
     const charge = await startCheckout();
 
-    await sendPayment({ chargeId: charge.providerChargeId, reference: charge.id });
+    payAtProvider(charge);
 
-    const events = await findEvents();
+    const result = await notify();
+
+    const events = await prisma.cloudBillingWebhookEvent.findMany({ where: { eventId: result.eventId } });
 
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
       provider: 'opapingou',
-      eventId: storedEventId('evt_1'),
-      eventType: 'pingou',
+      eventType: 'notification',
       outcome: 'PROCESSED',
       chargeId: charge.id,
     });
   });
 
-  it('does nothing when the same event is delivered again', async () => {
+  it('does not trust a body that claims a payment the provider does not report', async () => {
     const charge = await startCheckout();
 
-    await sendPayment({ chargeId: charge.providerChargeId, reference: charge.id });
-
-    const result = await sendPayment({
-      chargeId: charge.providerChargeId,
-      reference: charge.id,
-      now: new Date('2026-10-20T00:00:00.000Z'),
+    const result = await notify({
+      body: {
+        delivery: organisationId,
+        type: 'charge.paid',
+        data: { id: charge.providerChargeId, status: 'PAID', amountCents: 9990 },
+        evento: 'pingou',
+        cobranca: { id: charge.providerChargeId, referencia: charge.id, valor: '99.90', status: 'pingou' },
+      },
     });
 
-    const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
-
-    expect(result).toEqual({ status: 200, outcome: 'DUPLICATE', eventId: storedEventId('evt_1') });
-    expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-11-15T12:05:00.000Z');
-    expect(await findEvents()).toHaveLength(1);
+    expect(result.outcome).toBe('NOTHING_TO_CONFIRM');
+    expect((await findCharge(charge.id)).status).toBe(CloudSubscriptionChargeStatus.PENDING);
+    expect(await countSubscriptions()).toBe(0);
   });
 
-  it('grants a single month when the same event arrives twice at the same time', async () => {
+  it.each([
+    'EXPIRED',
+    'CANCELED',
+  ] as const)('does not activate anything for a charge %s at the provider', async (status) => {
     const charge = await startCheckout();
 
-    const results = await Promise.all([
-      sendPayment({ chargeId: charge.providerChargeId, reference: charge.id }),
-      sendPayment({ chargeId: charge.providerChargeId, reference: charge.id }),
-    ]);
+    api.updateCharge(charge.providerChargeId ?? '', { status });
 
-    const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
+    const result = await notify();
 
-    expect(results.map((result) => result.outcome).sort()).toEqual(['DUPLICATE', 'PROCESSED']);
+    expect(result.outcome).toBe('NOTHING_TO_CONFIRM');
+    expect(await countSubscriptions()).toBe(0);
+  });
+
+  it('does nothing when the same notification is delivered again', async () => {
+    const charge = await startCheckout();
+
+    payAtProvider(charge);
+
+    const first = await notify();
+    const second = await notify({ now: new Date('2027-03-16T00:00:00.000Z') });
+
+    const subscription = await findSubscription();
+
+    expect(second).toEqual({ status: 200, outcome: 'NOTHING_TO_CONFIRM', eventId: first.eventId });
+    expect(subscription.currentPeriodEnd.toISOString()).toBe('2027-04-15T12:05:00.000Z');
+    expect(await prisma.cloudBillingWebhookEvent.count({ where: { eventId: first.eventId } })).toBe(1);
+  });
+
+  it('grants a single month when two notifications arrive at the same time', async () => {
+    const charge = await startCheckout();
+
+    payAtProvider(charge);
+
+    const results = await Promise.all([notify({ delivery: 'a' }), notify({ delivery: 'b' })]);
+
+    const subscription = await findSubscription();
+
+    expect(results.map((result) => result.outcome).sort()).toEqual(['NOTHING_TO_CONFIRM', 'PROCESSED']);
     expect(results.every((result) => result.status === 200)).toBe(true);
-    expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-11-15T12:05:00.000Z');
+    expect(subscription.currentPeriodEnd.toISOString()).toBe('2027-04-15T12:05:00.000Z');
   });
 
-  it('grants a single month when two different events report the same payment', async () => {
+  it('does not activate anything when the provider reports another amount', async () => {
     const charge = await startCheckout();
 
-    await sendPayment({ eventId: 'evt_1', chargeId: charge.providerChargeId, reference: charge.id });
+    payAtProvider(charge, 5000);
 
-    const result = await sendPayment({
-      eventId: 'evt_2',
-      chargeId: charge.providerChargeId,
-      reference: charge.id,
-      now: new Date('2026-10-20T00:00:00.000Z'),
-    });
-
-    const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
-
-    expect(result).toEqual({
-      status: 200,
-      outcome: 'ALREADY_PAID',
-      eventId: storedEventId('evt_2'),
-      chargeId: charge.id,
-    });
-    expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-11-15T12:05:00.000Z');
-  });
-
-  it('uses the hash of the body to deduplicate events without an id', async () => {
-    const charge = await startCheckout();
-
-    const first = await sendPayment({ eventId: null, chargeId: charge.providerChargeId, reference: charge.id });
-    const second = await sendPayment({ eventId: null, chargeId: charge.providerChargeId, reference: charge.id });
-
-    expect(first.outcome).toBe('PROCESSED');
-    expect(second.outcome).toBe('DUPLICATE');
-    expect(first.eventId).toMatch(/^sha256:/);
-  });
-
-  it('does not activate anything when the paid amount differs', async () => {
-    const charge = await startCheckout();
-
-    const result = await sendPayment({ chargeId: charge.providerChargeId, reference: charge.id, amount: '50.00' });
-
-    const unpaidCharge = await prisma.cloudSubscriptionCharge.findUniqueOrThrow({ where: { id: charge.id } });
+    const result = await notify();
 
     expect(result).toEqual({
       status: 200,
       outcome: 'REJECTED_AMOUNT_MISMATCH',
-      eventId: storedEventId('evt_1'),
+      eventId: expect.stringMatching(/^sha256:/),
       chargeId: charge.id,
     });
-    expect(unpaidCharge.status).toBe(CloudSubscriptionChargeStatus.PENDING);
+    expect((await findCharge(charge.id)).status).toBe(CloudSubscriptionChargeStatus.PENDING);
     expect(await countSubscriptions()).toBe(0);
   });
 
-  it('does not activate anything when the amount cannot be read', async () => {
-    const charge = await startCheckout();
-
-    const result = await sendPayment({ chargeId: charge.providerChargeId, reference: charge.id, amount: 'abc' });
-
-    expect(result.outcome).toBe('REJECTED_AMOUNT_MISMATCH');
-    expect(await countSubscriptions()).toBe(0);
-  });
-
-  it('ignores a payment for a charge it does not know', async () => {
-    await startCheckout();
-
-    const result = await sendPayment({ chargeId: 'cob_unknown', reference: 'unknown_reference' });
-
-    expect(result).toEqual({ status: 200, outcome: 'IGNORED_UNKNOWN_CHARGE', eventId: storedEventId('evt_1') });
-    expect(await countSubscriptions()).toBe(0);
-  });
-
-  it('ignores a payment whose provider id does not match the referenced charge', async () => {
-    const charge = await startCheckout();
-
-    const result = await sendPayment({ chargeId: 'cob_of_someone_else', reference: charge.id });
-
-    expect(result.outcome).toBe('IGNORED_UNKNOWN_CHARGE');
-    expect(await countSubscriptions()).toBe(0);
-  });
-
-  it('ignores events that are not a payment', async () => {
-    const charge = await startCheckout();
-
-    const result = await sendPayment({
-      chargeId: charge.providerChargeId,
-      reference: charge.id,
-      eventName: 'cobranca_criada',
-    });
-
-    expect(result).toEqual({
-      status: 200,
-      outcome: 'IGNORED_EVENT_TYPE',
-      eventId: storedEventId('evt_1', 'cobranca_criada'),
-    });
-    expect(await countSubscriptions()).toBe(0);
-  });
-
-  it('still handles the payment after another event used the same provider id', async () => {
-    const charge = await startCheckout();
-
-    const created = await sendPayment({
-      eventId: 'shared_id',
-      chargeId: charge.providerChargeId,
-      reference: charge.id,
-      eventName: 'cobranca_criada',
-    });
-
-    const paid = await sendPayment({ eventId: 'shared_id', chargeId: charge.providerChargeId, reference: charge.id });
-
-    expect(created.outcome).toBe('IGNORED_EVENT_TYPE');
-    expect(paid.outcome).toBe('PROCESSED');
-    expect(await countSubscriptions()).toBe(1);
-  });
-
-  it('grants a single month when two different events report the same payment at the same time', async () => {
-    const charge = await startCheckout();
-
-    const results = await Promise.all([
-      sendPayment({ eventId: 'evt_1', chargeId: charge.providerChargeId, reference: charge.id }),
-      sendPayment({ eventId: 'evt_2', chargeId: charge.providerChargeId, reference: charge.id }),
-    ]);
-
-    const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
-
-    expect(results.map((result) => result.outcome).sort()).toEqual(['ALREADY_PAID', 'PROCESSED']);
-    expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-11-15T12:05:00.000Z');
-  });
-
-  it('finds the charge by the provider id when there is no reference', async () => {
-    const charge = await startCheckout();
-
-    const result = await sendPayment({ chargeId: charge.providerChargeId });
-
-    expect(result.outcome).toBe('PROCESSED');
-    expect(result.chargeId).toBe(charge.id);
-  });
-
-  it('finds the charge by the reference when there is no provider id', async () => {
-    const charge = await startCheckout();
-
-    const result = await sendPayment({ reference: charge.id });
-
-    expect(result.outcome).toBe('PROCESSED');
-  });
-
-  it('honours the payment of a charge that had expired', async () => {
+  it('honours the payment of a charge that expired on our side', async () => {
     const charge = await startCheckout();
 
     await prisma.cloudSubscriptionCharge.update({
@@ -336,93 +239,147 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
       data: { status: CloudSubscriptionChargeStatus.EXPIRED },
     });
 
-    const result = await sendPayment({ chargeId: charge.providerChargeId, reference: charge.id });
+    payAtProvider(charge);
+
+    const result = await notify();
 
     expect(result.outcome).toBe('PROCESSED');
     expect(await countSubscriptions()).toBe(1);
   });
 
+  it(`does not read charges older than ${CLOUD_BILLING_CONFIRMATION_WINDOW_DAYS} days`, async () => {
+    const charge = await startCheckout();
+
+    payAtProvider(charge);
+
+    const result = await notify({ now: new Date('2027-03-17T12:01:00.000Z') });
+
+    expect(result.outcome).toBe('NOTHING_TO_CONFIRM');
+    expect(chargeReads().map((request) => request.path)).not.toContain(`/v1/charges/${charge.providerChargeId}`);
+    expect(await countSubscriptions()).toBe(0);
+  });
+
+  it('answers with an error while the provider cannot be read, and confirms on the next delivery', async () => {
+    const charge = await startCheckout();
+
+    payAtProvider(charge);
+
+    api.setNextResponse({ status: 503, body: '' });
+
+    await expect(notify()).rejects.toThrow();
+
+    expect(await countSubscriptions()).toBe(0);
+
+    const retried = await notify();
+
+    expect(retried.outcome).toBe('PROCESSED');
+    expect(await countSubscriptions()).toBe(1);
+  });
+
+  it('skips a charge the provider does not know, without holding back the others', async () => {
+    const paidCharge = await startCheckout();
+
+    await prisma.cloudSubscriptionCharge.create({
+      data: {
+        createdAt: CHECKOUT_AT,
+        organisationId,
+        provider: 'opapingou',
+        providerChargeId: 'unknown-to-the-provider',
+        amountCents: 9990,
+        status: CloudSubscriptionChargeStatus.EXPIRED,
+      },
+    });
+
+    payAtProvider(paidCharge);
+
+    const result = await notify();
+
+    const readPaths = chargeReads().map((request) => request.path);
+
+    expect(result.outcome).toBe('PROCESSED');
+    expect(result.chargeId).toBe(paidCharge.id);
+    expect(readPaths).toContain('/v1/charges/unknown-to-the-provider');
+    expect(readPaths).toContain(`/v1/charges/${paidCharge.providerChargeId}`);
+  });
+
   it('extends from the end of the running period on renewal', async () => {
     const firstCharge = await startCheckout();
 
-    await sendPayment({ eventId: 'evt_1', chargeId: firstCharge.providerChargeId, reference: firstCharge.id });
+    payAtProvider(firstCharge);
 
-    const renewalAt = new Date('2026-11-10T09:00:00.000Z');
+    await notify({ delivery: 'first' });
+
+    const renewalAt = new Date('2027-04-10T09:00:00.000Z');
     const renewalCharge = await startCheckout(renewalAt);
 
-    const result = await sendPayment({
-      eventId: 'evt_2',
-      chargeId: renewalCharge.providerChargeId,
-      reference: renewalCharge.id,
-      now: renewalAt,
-    });
+    payAtProvider(renewalCharge);
 
-    const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
+    const result = await notify({ delivery: 'renewal', now: renewalAt });
 
-    const paidRenewal = await prisma.cloudSubscriptionCharge.findUniqueOrThrow({ where: { id: renewalCharge.id } });
+    const subscription = await findSubscription();
+    const paidRenewal = await findCharge(renewalCharge.id);
 
     expect(renewalCharge.id).not.toBe(firstCharge.id);
     expect(result.outcome).toBe('PROCESSED');
 
     // The charge records the month it bought.
-    expect(paidRenewal.periodStart?.toISOString()).toBe('2026-11-15T12:05:00.000Z');
-    expect(paidRenewal.periodEnd?.toISOString()).toBe('2026-12-15T12:05:00.000Z');
+    expect(paidRenewal.periodStart?.toISOString()).toBe('2027-04-15T12:05:00.000Z');
+    expect(paidRenewal.periodEnd?.toISOString()).toBe('2027-05-15T12:05:00.000Z');
 
     // The subscription records the uninterrupted coverage.
-    expect(subscription.currentPeriodStart.toISOString()).toBe('2026-10-15T12:05:00.000Z');
-    expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-12-15T12:05:00.000Z');
+    expect(subscription.currentPeriodStart.toISOString()).toBe('2027-03-15T12:05:00.000Z');
+    expect(subscription.currentPeriodEnd.toISOString()).toBe('2027-05-15T12:05:00.000Z');
   });
 
   it('restarts from the payment date when renewing after the period ended', async () => {
     const firstCharge = await startCheckout();
 
-    await sendPayment({ eventId: 'evt_1', chargeId: firstCharge.providerChargeId, reference: firstCharge.id });
+    payAtProvider(firstCharge);
 
-    const renewalAt = new Date('2026-12-01T09:00:00.000Z');
+    await notify({ delivery: 'first' });
+
+    const renewalAt = new Date('2027-05-01T09:00:00.000Z');
     const renewalCharge = await startCheckout(renewalAt);
 
-    await sendPayment({
-      eventId: 'evt_2',
-      chargeId: renewalCharge.providerChargeId,
-      reference: renewalCharge.id,
-      now: renewalAt,
-    });
+    payAtProvider(renewalCharge);
 
-    const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
+    await notify({ delivery: 'renewal', now: renewalAt });
 
-    expect(subscription.currentPeriodStart.toISOString()).toBe('2026-12-01T09:00:00.000Z');
-    expect(subscription.currentPeriodEnd.toISOString()).toBe('2027-01-01T09:00:00.000Z');
+    const subscription = await findSubscription();
+
+    expect(subscription.currentPeriodStart.toISOString()).toBe('2027-05-01T09:00:00.000Z');
+    expect(subscription.currentPeriodEnd.toISOString()).toBe('2027-06-01T09:00:00.000Z');
   });
 
-  it('grants two months when two charges of the organisation are paid at the same time', async () => {
+  it('grants two months when a replaced charge and its replacement are both paid', async () => {
     const firstCharge = await startCheckout();
+    const secondCharge = await startCheckout(new Date('2027-03-15T12:01:00.000Z'), true);
 
-    const secondCharge = await prisma.cloudSubscriptionCharge.create({
-      data: {
-        organisationId,
-        provider: 'opapingou',
-        providerChargeId: 'cob_second',
-        amountCents: 9990,
-      },
-    });
+    payAtProvider(firstCharge);
+    payAtProvider(secondCharge);
 
-    const results = await Promise.all([
-      sendPayment({ eventId: 'evt_1', chargeId: firstCharge.providerChargeId, reference: firstCharge.id }),
-      sendPayment({ eventId: 'evt_2', chargeId: secondCharge.providerChargeId, reference: secondCharge.id }),
-    ]);
+    const result = await notify();
 
-    const subscription = await prisma.cloudSubscription.findUniqueOrThrow({ where: { organisationId } });
+    const subscription = await findSubscription();
 
-    expect(results.map((result) => result.outcome)).toEqual(['PROCESSED', 'PROCESSED']);
-    expect(subscription.currentPeriodStart.toISOString()).toBe('2026-10-15T12:05:00.000Z');
-    expect(subscription.currentPeriodEnd.toISOString()).toBe('2026-12-15T12:05:00.000Z');
+    expect(secondCharge.id).not.toBe(firstCharge.id);
+    expect(result.outcome).toBe('PROCESSED');
+    expect((await findCharge(firstCharge.id)).status).toBe(CloudSubscriptionChargeStatus.PAID);
+    expect((await findCharge(secondCharge.id)).status).toBe(CloudSubscriptionChargeStatus.PAID);
+    expect(subscription.currentPeriodStart.toISOString()).toBe('2027-03-15T12:05:00.000Z');
+    expect(subscription.currentPeriodEnd.toISOString()).toBe('2027-05-15T12:05:00.000Z');
+
+    // The oldest charge bought the first month.
+    expect((await findCharge(firstCharge.id)).periodEnd?.toISOString()).toBe('2027-04-15T12:05:00.000Z');
   });
 
   it('does not touch the subscription of another organisation', async () => {
     const other = await createTestOrganisation();
     const charge = await startCheckout();
 
-    await sendPayment({ chargeId: charge.providerChargeId, reference: charge.id });
+    payAtProvider(charge);
+
+    await notify();
 
     expect(await prisma.cloudSubscription.count({ where: { organisationId: other.organisation.id } })).toBe(0);
   });
