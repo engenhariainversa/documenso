@@ -66,6 +66,15 @@ describe('getWaitlistFormErrorKind', () => {
     expect(getWaitlistFormErrorKind(error)).toBe('disposableEmail');
   });
 
+  it('maps a tRPC input validation failure (BAD_REQUEST without appError) to invalid', () => {
+    const trpcError = Object.assign(new Error('[{"code":"too_small"}]'), {
+      name: 'TRPCClientError',
+      data: { code: 'BAD_REQUEST', httpStatus: 400 },
+    });
+
+    expect(getWaitlistFormErrorKind(trpcError)).toBe('invalid');
+  });
+
   it('treats anything else, including plain errors, as generic', () => {
     expect(getWaitlistFormErrorKind(new AppError(AppErrorCode.INVALID_BODY))).toBe('generic');
     expect(getWaitlistFormErrorKind(new Error('network'))).toBe('generic');

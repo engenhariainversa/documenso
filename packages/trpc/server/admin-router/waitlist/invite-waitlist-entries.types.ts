@@ -8,6 +8,7 @@ export type TInviteWaitlistEntriesRequest = z.infer<typeof ZInviteWaitlistEntrie
 
 export const ZInviteWaitlistEntryResultSchema = z.discriminatedUnion('status', [
   z.object({ id: z.string(), status: z.literal('INVITED'), userId: z.number() }),
+  z.object({ id: z.string(), status: z.literal('RESENT'), userId: z.number() }),
   z.object({ id: z.string(), status: z.literal('EXISTING'), userId: z.number() }),
   z.object({ id: z.string(), status: z.literal('NOT_FOUND') }),
   z.object({ id: z.string(), status: z.literal('FAILED'), error: z.string() }),

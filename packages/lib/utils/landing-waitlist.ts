@@ -32,12 +32,30 @@ export const getLandingSignupAction = ({
   return isWaitlistEnabled ? 'waitlist' : 'none';
 };
 
-export type WaitlistFormErrorKind = 'consent' | 'rateLimited' | 'disposableEmail' | 'generic';
+export type WaitlistFormErrorKind = 'consent' | 'invalid' | 'rateLimited' | 'disposableEmail' | 'generic';
+
+/**
+ * A tRPC input validation failure has no `appError`; only the tRPC code tells it apart
+ * from a real server failure, so the person is told to check the data, not to retry later.
+ */
+const isTrpcBadRequest = (error: unknown) => {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+
+  const { name, data } = error as { name?: unknown; data?: { code?: unknown; appError?: unknown } };
+
+  return name === 'TRPCClientError' && data?.code === 'BAD_REQUEST' && !data.appError;
+};
 
 /**
  * Which message the landing form shows for a failed sign-up.
  */
 export const getWaitlistFormErrorKind = (error: unknown): WaitlistFormErrorKind => {
+  if (isTrpcBadRequest(error)) {
+    return 'invalid';
+  }
+
   const appError = AppError.parseError(error);
 
   if (appError.code === AppErrorCode.TOO_MANY_REQUESTS) {

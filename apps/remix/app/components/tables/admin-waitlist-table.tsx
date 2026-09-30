@@ -91,10 +91,11 @@ export const AdminWaitlistTable = ({ entries, totalPages, perPage, page }: Admin
 
   const summariseInvite = (results: TInviteWaitlistEntriesResponse['results']) => {
     const invited = results.filter((result) => result.status === 'INVITED').length;
+    const resent = results.filter((result) => result.status === 'RESENT').length;
     const existing = results.filter((result) => result.status === 'EXISTING').length;
     const failed = results.filter((result) => result.status === 'FAILED' || result.status === 'NOT_FOUND').length;
 
-    return _(msg`${invited} invited, ${existing} already had an account, ${failed} failed`);
+    return _(msg`${invited} invited, ${resent} resent, ${existing} already had an account, ${failed} failed`);
   };
 
   const onInvite = async (ids: string[]) => {

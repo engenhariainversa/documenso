@@ -14718,8 +14718,8 @@ msgid "{count} people on the list"
 msgstr "{count} people on the list"
 
 #: apps/remix/app/components/tables/admin-waitlist-table.tsx
-msgid "{invited} invited, {existing} already had an account, {failed} failed"
-msgstr "{invited} invited, {existing} already had an account, {failed} failed"
+msgid "{invited} invited, {resent} resent, {existing} already had an account, {failed} failed"
+msgstr "{invited} invited, {resent} resent, {existing} already had an account, {failed} failed"
 
 #: apps/remix/app/components/tables/admin-waitlist-table.tsx
 msgid "Already had an account"

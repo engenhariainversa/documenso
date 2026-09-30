@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 
-const { prisma, jobsClient, waitlistJoinRateLimit, verifyCaptchaToken } = vi.hoisted(() => ({
+const { prisma, jobsClient, waitlistJoinRateLimit, verifyCaptchaToken, getEmailBlocklistDomains } = vi.hoisted(() => ({
   prisma: {
     waitlistEntry: {
       findUnique: vi.fn(),
@@ -16,12 +16,14 @@ const { prisma, jobsClient, waitlistJoinRateLimit, verifyCaptchaToken } = vi.hoi
     check: vi.fn(),
   },
   verifyCaptchaToken: vi.fn(),
+  getEmailBlocklistDomains: vi.fn(),
 }));
 
 vi.mock('@documenso/prisma', () => ({ prisma }));
 vi.mock('../../jobs/client', () => ({ jobsClient }));
 vi.mock('../rate-limit/rate-limits', () => ({ waitlistJoinRateLimit }));
 vi.mock('../captcha/verify-captcha', () => ({ verifyCaptchaToken }));
+vi.mock('../site-settings/get-email-blocklist-domains', () => ({ getEmailBlocklistDomains }));
 
 import { joinWaitlist, WAITLIST_DISPOSABLE_EMAIL_MESSAGE } from './join-waitlist';
 
@@ -54,6 +56,7 @@ describe('joinWaitlist', () => {
 
     waitlistJoinRateLimit.check.mockResolvedValue({ isLimited: false, remaining: 4, limit: 5, reset: new Date() });
     verifyCaptchaToken.mockResolvedValue(undefined);
+    getEmailBlocklistDomains.mockResolvedValue([]);
     prisma.waitlistEntry.findUnique.mockResolvedValue(null);
     prisma.waitlistEntry.create.mockImplementation(async ({ data }) => ({ id: 'entry_1', ...data }));
     jobsClient.triggerJob.mockResolvedValue(undefined);
@@ -103,6 +106,16 @@ describe('joinWaitlist', () => {
 
     await expectAppError(promise, AppErrorCode.INVALID_BODY);
     await expect(promise.catch((err: AppError) => err.message)).resolves.toBe(WAITLIST_DISPOSABLE_EMAIL_MESSAGE);
+    expect(prisma.waitlistEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('also refuses the domains the admin blocked in the site settings, like signup does', async () => {
+    getEmailBlocklistDomains.mockResolvedValue(['bloqueado.com']);
+
+    await expectAppError(
+      joinWaitlist({ input: { ...INPUT, email: 'alguem@bloqueado.com' }, ipAddress: IP }),
+      AppErrorCode.INVALID_BODY,
+    );
     expect(prisma.waitlistEntry.create).not.toHaveBeenCalled();
   });
 

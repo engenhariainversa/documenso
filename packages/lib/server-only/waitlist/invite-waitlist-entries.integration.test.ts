@@ -93,13 +93,25 @@ describe.skipIf(!hasTestDatabase)('inviteWaitlistEntries (database)', () => {
     });
   });
 
-  it('reports EXISTING on a second invite and creates nothing new', async () => {
+  it('resends the invite on a second call while the password is unset, creating nothing new', async () => {
     jobsClient.triggerJob.mockClear();
 
     const { results } = await inviteWaitlistEntries({ ids: [entryId] });
 
-    expect(results[0].status).toBe('EXISTING');
+    expect(results[0].status).toBe('RESENT');
     expect(await prisma.user.count({ where: { email } })).toBe(1);
+    expect(await prisma.organisation.count({ where: { owner: { email } } })).toBe(1);
+    expect(jobsClient.triggerJob).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports EXISTING once the person has set a password', async () => {
+    jobsClient.triggerJob.mockClear();
+
+    await prisma.user.updateMany({ where: { email }, data: { password: 'hash' } });
+
+    const { results } = await inviteWaitlistEntries({ ids: [entryId] });
+
+    expect(results[0].status).toBe('EXISTING');
     expect(jobsClient.triggerJob).not.toHaveBeenCalled();
   });
 });

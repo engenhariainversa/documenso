@@ -7,6 +7,7 @@ import { type TJoinWaitlistRequest, WAITLIST_DISPOSABLE_EMAIL_MESSAGE } from '..
 import { isWaitlistEnabled } from '../../utils/landing-waitlist';
 import { verifyCaptchaToken } from '../captcha/verify-captcha';
 import { waitlistJoinRateLimit } from '../rate-limit/rate-limits';
+import { getEmailBlocklistDomains } from '../site-settings/get-email-blocklist-domains';
 import { normalizeWaitlistPhone } from './normalize-phone';
 
 export { WAITLIST_DISPOSABLE_EMAIL_MESSAGE };
@@ -49,7 +50,8 @@ export const joinWaitlist = async ({ input, ipAddress }: JoinWaitlistOptions) =>
 
   const email = input.email.trim().toLowerCase();
 
-  if (isDisposableEmail(email)) {
+  // Same check as signup: the built-in disposable list plus the domains blocked in the site settings.
+  if (isDisposableEmail(email, await getEmailBlocklistDomains())) {
     throw new AppError(AppErrorCode.INVALID_BODY, {
       message: WAITLIST_DISPOSABLE_EMAIL_MESSAGE,
       statusCode: 400,

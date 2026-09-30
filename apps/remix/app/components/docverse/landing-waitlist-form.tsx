@@ -1,4 +1,5 @@
 import { NEXT_PUBLIC_PRIVACY_URL } from '@documenso/lib/constants/app';
+import { ZJoinWaitlistRequestSchema } from '@documenso/lib/types/waitlist';
 import { env } from '@documenso/lib/utils/env';
 import type { LandingLanguage } from '@documenso/lib/utils/landing-language';
 import {
@@ -66,6 +67,24 @@ export const LandingWaitlistForm = ({ lang }: LandingWaitlistFormProps) => {
       return;
     }
 
+    // Same schema as the server, so a typo is reported as such instead of as a server failure.
+    const parsed = ZJoinWaitlistRequestSchema.safeParse({
+      name,
+      email,
+      phoneCountry,
+      phoneArea,
+      phoneNumber,
+      locale: lang,
+      consent: true,
+      consentVersion: WAITLIST_CONSENT_VERSION,
+      website,
+    });
+
+    if (!parsed.success) {
+      setState({ kind: 'error', reason: 'invalid' });
+      return;
+    }
+
     setState({ kind: 'sending' });
 
     try {
@@ -75,18 +94,7 @@ export const LandingWaitlistForm = ({ lang }: LandingWaitlistFormProps) => {
         captchaToken = await turnstileRef.current?.getResponsePromise(3000).catch(() => undefined);
       }
 
-      await join({
-        name,
-        email,
-        phoneCountry,
-        phoneArea,
-        phoneNumber,
-        locale: lang,
-        consent: true,
-        consentVersion: WAITLIST_CONSENT_VERSION,
-        website,
-        captchaToken,
-      });
+      await join({ ...parsed.data, captchaToken });
 
       setState({ kind: 'done' });
     } catch (err) {
@@ -293,6 +301,7 @@ export const LANDING_WAITLIST_COPY: Record<LandingLanguage, LandingWaitlistCopy>
     success: 'Você está na lista. Vamos avisar por e-mail quando o acesso for liberado.',
     errors: {
       consent: 'Marque a caixa de consentimento para continuar.',
+      invalid: 'Confira os dados: nome com pelo menos 2 letras, e-mail válido e telefone completo (DDI, DDD e número).',
       rateLimited: 'Muitas tentativas deste endereço. Tente de novo mais tarde.',
       disposableEmail: 'Use um e-mail permanente; endereços descartáveis não são aceitos.',
       generic: 'Não foi possível registrar. Tente de novo em alguns minutos.',
@@ -315,6 +324,8 @@ export const LANDING_WAITLIST_COPY: Record<LandingLanguage, LandingWaitlistCopy>
     success: 'You are on the list. We will email you when access opens.',
     errors: {
       consent: 'Tick the consent box to continue.',
+      invalid:
+        'Check the details: a name with at least 2 letters, a valid email and a complete phone (country code, area code and number).',
       rateLimited: 'Too many attempts from this address. Try again later.',
       disposableEmail: 'Use a permanent email; disposable addresses are not accepted.',
       generic: 'We could not save your details. Try again in a few minutes.',

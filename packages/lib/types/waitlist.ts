@@ -30,19 +30,28 @@ const zPhoneDigits = (min: number, max: number) =>
 /**
  * Payload of the public waitlist form. Shared by the tRPC route and the landing page.
  */
-export const ZJoinWaitlistRequestSchema = z.object({
-  name: ZNameSchema,
-  email: z.string().trim().toLowerCase().max(254).pipe(zEmail()),
-  phoneCountry: zPhoneDigits(1, 4),
-  phoneArea: zPhoneDigits(1, 5),
-  phoneNumber: zPhoneDigits(6, 12),
-  locale: z.enum(WAITLIST_LOCALES),
-  consent: z.literal(true),
-  consentVersion: z.string().min(1).max(20),
-  /** Honeypot: people never see this field, bots fill it. */
-  website: z.string().max(200).optional(),
-  captchaToken: z.string().trim().optional(),
-});
+/** E.164 allows at most 15 digits after the "+". */
+const E164_MAX_DIGITS = 15;
+
+export const ZJoinWaitlistRequestSchema = z
+  .object({
+    name: ZNameSchema,
+    email: z.string().trim().toLowerCase().max(254).pipe(zEmail()),
+    phoneCountry: zPhoneDigits(1, 4).refine((value) => /[1-9]/.test(value), 'Country code cannot be zero'),
+    phoneArea: zPhoneDigits(1, 5),
+    phoneNumber: zPhoneDigits(6, 12),
+    locale: z.enum(WAITLIST_LOCALES),
+    consent: z.literal(true),
+    consentVersion: z.string().min(1).max(20),
+    /** Honeypot: people never see this field, bots fill it. */
+    website: z.string().max(200).optional(),
+    captchaToken: z.string().trim().optional(),
+  })
+  .refine(
+    ({ phoneCountry, phoneArea, phoneNumber }) =>
+      phoneCountry.replace(/^0+/, '').length + phoneArea.length + phoneNumber.length <= E164_MAX_DIGITS,
+    { message: 'Phone number is too long', path: ['phoneNumber'] },
+  );
 
 export type TJoinWaitlistRequest = z.infer<typeof ZJoinWaitlistRequestSchema>;
 

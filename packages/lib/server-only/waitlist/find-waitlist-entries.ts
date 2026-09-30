@@ -30,19 +30,20 @@ export const findWaitlistEntries = async ({ query = '', page = 1, perPage = 20 }
     prisma.waitlistEntry.count({ where: whereClause }),
   ]);
 
+  // OAuth keeps the casing the provider returns, so the comparison ignores case.
   const users = entries.length
     ? await prisma.user.findMany({
-        where: { email: { in: entries.map((entry) => entry.email) } },
+        where: { email: { in: entries.map((entry) => entry.email), mode: 'insensitive' } },
         select: { email: true },
       })
     : [];
 
-  const emailsWithAccount = new Set(users.map((user) => user.email));
+  const emailsWithAccount = new Set(users.map((user) => user.email.toLowerCase()));
 
   return {
     entries: entries.map((entry) => ({
       ...entry,
-      hasAccount: emailsWithAccount.has(entry.email),
+      hasAccount: emailsWithAccount.has(entry.email.toLowerCase()),
     })),
     count,
     totalPages: Math.ceil(count / perPage),

@@ -36,6 +36,18 @@ describe('ZJoinWaitlistRequestSchema', () => {
     expect(ZJoinWaitlistRequestSchema.safeParse({ ...VALID, phoneNumber: '12345' }).success).toBe(false);
   });
 
+  it('refuses a country code made only of zeros and a phone longer than E.164 allows', () => {
+    expect(ZJoinWaitlistRequestSchema.safeParse({ ...VALID, phoneCountry: '00' }).success).toBe(false);
+    expect(
+      ZJoinWaitlistRequestSchema.safeParse({
+        ...VALID,
+        phoneCountry: '5555',
+        phoneArea: '62626',
+        phoneNumber: '999999999999',
+      }).success,
+    ).toBe(false);
+  });
+
   it('refuses an invalid email', () => {
     expect(ZJoinWaitlistRequestSchema.safeParse({ ...VALID, email: 'nao-e-email' }).success).toBe(false);
   });

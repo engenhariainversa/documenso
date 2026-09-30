@@ -10,6 +10,9 @@ const { prisma, jobsClient, onCreateUserHook } = vi.hoisted(() => ({
       findFirst: vi.fn(),
       create: vi.fn(),
     },
+    organisationMember: {
+      count: vi.fn(),
+    },
   },
   jobsClient: {
     triggerJob: vi.fn(),
@@ -42,6 +45,7 @@ describe('inviteWaitlistEntries', () => {
     prisma.waitlistEntry.findMany.mockResolvedValue([ENTRY]);
     prisma.waitlistEntry.update.mockResolvedValue(ENTRY);
     prisma.user.findFirst.mockResolvedValue(null);
+    prisma.organisationMember.count.mockResolvedValue(1);
     prisma.user.create.mockImplementation(async ({ data }) => ({ id: 42, ...data }));
     onCreateUserHook.mockResolvedValue(undefined);
     jobsClient.triggerJob.mockResolvedValue(undefined);
@@ -84,8 +88,50 @@ describe('inviteWaitlistEntries', () => {
     });
   });
 
+  it('looks the account up without case sensitivity, since OAuth keeps the provider casing', async () => {
+    prisma.user.findFirst.mockResolvedValue({ id: 7, email: 'Ana@Exemplo.com', password: 'hash' });
+
+    await inviteWaitlistEntries({ ids: ['entry_1'] });
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { email: { equals: 'ana@exemplo.com', mode: 'insensitive' } } }),
+    );
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('resends the invite when the account was created by this entry and still has no password', async () => {
+    prisma.waitlistEntry.findMany.mockResolvedValue([
+      { ...ENTRY, invitedAt: new Date('2026-10-01T00:00:00Z'), invitedUserId: 42 },
+    ]);
+    prisma.user.findFirst.mockResolvedValue({ id: 42, email: 'ana@exemplo.com', password: null });
+
+    const { results } = await inviteWaitlistEntries({ ids: ['entry_1'] });
+
+    expect(results).toEqual([{ id: 'entry_1', status: 'RESENT', userId: 42 }]);
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(jobsClient.triggerJob).toHaveBeenCalledWith({
+      name: 'send.waitlist.invite.email',
+      payload: { waitlistEntryId: 'entry_1', userId: 42 },
+    });
+    expect(prisma.waitlistEntry.update).toHaveBeenCalledWith({
+      where: { id: 'entry_1' },
+      data: { invitedAt: expect.any(Date), invitedUserId: 42 },
+    });
+  });
+
+  it('recovers a half-finished invite by creating the missing personal organisation before resending', async () => {
+    prisma.waitlistEntry.findMany.mockResolvedValue([{ ...ENTRY, invitedUserId: 42 }]);
+    prisma.user.findFirst.mockResolvedValue({ id: 42, email: 'ana@exemplo.com', password: null });
+    prisma.organisationMember.count.mockResolvedValue(0);
+
+    const { results } = await inviteWaitlistEntries({ ids: ['entry_1'] });
+
+    expect(results).toEqual([{ id: 'entry_1', status: 'RESENT', userId: 42 }]);
+    expect(onCreateUserHook).toHaveBeenCalledWith(expect.objectContaining({ id: 42 }));
+  });
+
   it('only stamps the invite when the email already has an account, without creating or emailing', async () => {
-    prisma.user.findFirst.mockResolvedValue({ id: 7, email: 'ana@exemplo.com' });
+    prisma.user.findFirst.mockResolvedValue({ id: 7, email: 'ana@exemplo.com', password: 'hash' });
 
     const { results } = await inviteWaitlistEntries({ ids: ['entry_1'] });
 

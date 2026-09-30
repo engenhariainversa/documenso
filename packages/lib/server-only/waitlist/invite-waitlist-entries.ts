@@ -9,6 +9,7 @@ export type InviteWaitlistEntriesOptions = {
 
 export type InviteWaitlistEntryResult =
   | { id: string; status: 'INVITED'; userId: number }
+  | { id: string; status: 'RESENT'; userId: number }
   | { id: string; status: 'EXISTING'; userId: number }
   | { id: string; status: 'NOT_FOUND' }
   | { id: string; status: 'FAILED'; error: string };
@@ -18,8 +19,11 @@ export type InviteWaitlistEntryResult =
  *
  * For each entry, an account is created without a password and with a verified email
  * (the person sets the password from the invite link), plus the personal organisation
- * every self-signed-up user gets. When the email already has an account, only the
- * invite stamp is written and no email is sent.
+ * every self-signed-up user gets. Inviting again an entry whose account was created by
+ * a previous invite and still has no password resends the email (and repairs a missing
+ * personal organisation, in case the first invite failed halfway). When the email
+ * belongs to an account the invite did not create, only the invite stamp is written and
+ * no email is sent.
  *
  * Entries are processed one at a time; a failure is reported on its entry and never
  * stops the others.
@@ -42,15 +46,35 @@ export const inviteWaitlistEntries = async ({ ids }: InviteWaitlistEntriesOption
     }
 
     try {
+      // OAuth keeps the casing the provider returns, so the lookup must ignore case.
       const existingUser = await prisma.user.findFirst({
-        where: { email: entry.email },
-        select: { id: true },
+        where: { email: { equals: entry.email, mode: 'insensitive' } },
       });
 
       if (existingUser) {
+        const createdByThisInvite = existingUser.id === entry.invitedUserId && existingUser.password === null;
+
+        if (!createdByThisInvite) {
+          await stampInvite({ id, userId: existingUser.id });
+
+          results.push({ id, status: 'EXISTING', userId: existingUser.id });
+          continue;
+        }
+
+        const memberships = await prisma.organisationMember.count({ where: { userId: existingUser.id } });
+
+        if (memberships === 0) {
+          await onCreateUserHook(existingUser);
+        }
+
         await stampInvite({ id, userId: existingUser.id });
 
-        results.push({ id, status: 'EXISTING', userId: existingUser.id });
+        await jobsClient.triggerJob({
+          name: 'send.waitlist.invite.email',
+          payload: { waitlistEntryId: id, userId: existingUser.id },
+        });
+
+        results.push({ id, status: 'RESENT', userId: existingUser.id });
         continue;
       }
 
