@@ -88,8 +88,8 @@ Ordem das verificações:
 1. `NEXT_PUBLIC_WAITLIST_ENABLED !== 'true'` → erro `NOT_FOUND` ("A lista de espera não está ativa").
 2. Limite por IP: 5 inscrições por hora por IP, 100 por hora no total (`createRateLimit({ action: 'waitlist.join', max: 5, globalMax: 100, window: '1h' })`). Estourou → `TOO_MANY_REQUESTS`.
 3. Isca preenchida → resposta de sucesso, sem gravar e sem e-mail.
-4. Turnstile: `verifyCaptcha(captchaToken)` quando a chave secreta estiver configurada (mesma função do cadastro). Falhou → `BAD_REQUEST`.
-5. E-mail com domínio descartável (`isEmailDomainBlocked`, a mesma verificação do cadastro) → `BAD_REQUEST` com código próprio, para a landing mostrar "Use um e-mail permanente".
+4. Turnstile: `verifyCaptchaToken` quando a chave secreta estiver configurada (mesma função do cadastro). Falhou → `BAD_REQUEST`.
+5. E-mail com domínio descartável (`isDisposableEmail`, a mesma verificação do cadastro) → `BAD_REQUEST` com código próprio, para a landing mostrar "Use um e-mail permanente".
 6. E-mail já na lista → resposta de sucesso, sem gravar e sem e-mail.
 7. Grava a inscrição e dispara o job `send.waitlist.joined.emails` com o id da inscrição.
 
