@@ -1,83 +1,46 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { z } from 'zod';
-
-import { parseDecimalToCents } from '../../../../universal/cloud-billing/money';
 
 /**
- * Opa Pingou webhook verification and parsing.
+ * Opa Pingou webhook verification.
  *
- * The provider only publishes the NAME of its payment webhook ("pingou"). The
- * signature scheme and the payload shape below are ASSUMED and must be checked
- * against the real documentation before billing is turned on. Keep every
- * assumption about the webhook shape inside this file.
+ * The provider's REST reference (a PREVIEW, checked on 2026-09-30, see
+ * `opapingou-client.ts`) documents outgoing webhooks: an endpoint registered at
+ * `/v1/webhook-endpoints`, each delivery signed with HMAC using the endpoint's
+ * secret, deliveries logged and redeliverable. Everything else is "A definir"
+ * (undecided): the list of events, the body, the signature header, the algorithm
+ * and what exactly is signed, the retry policy and the response timeout.
  *
+ * So the body is never trusted nor interpreted: an authentic delivery only tells
+ * Docverse to read its pending charges back from the API (`getOpapingouCharge`),
+ * and only the charge the API reports as PAID activates a subscription. The same
+ * rule the provider applies to the banks it receives webhooks from.
+ *
+ * - DOCUMENTED: HMAC signature with the endpoint secret
  * - ASSUMED: header `x-opapingou-signature`
  * - ASSUMED: hex HMAC-SHA256 of the raw body, optionally prefixed with `sha256=`
- * - ASSUMED: body `{ id, evento, cobranca: { id, referencia, valor, status } }`
- * - ASSUMED: a paid charge has `status: "pingou"`
- * - UNKNOWN: whether `valor` is the gross amount or the amount net of the provider's
- *   `taxa`. The handler compares it with the amount charged, so a net amount would
- *   reject every payment.
+ * - DOCUMENTED: the body is JSON; its shape is UNDECIDED and not read
  */
 export const OPAPINGOU_SIGNATURE_HEADER = 'x-opapingou-signature';
-
-const OPAPINGOU_PAYMENT_EVENT = 'pingou';
 
 const SIGNATURE_PREFIX = 'sha256=';
 
 const SHA256_HEX_REGEX = /^[0-9a-f]{64}$/;
 
 /**
- * ASSUMED: the status a paid charge carries. It is the only status the provider
- * publishes, and it shows it on a charge that was just created, so the event name
- * alone is not trusted: when the status is sent, it must say the charge was paid.
+ * The provider's event types are not documented, so every delivery is recorded as this.
  */
-const OPAPINGOU_PAID_CHARGE_STATUS = 'pingou';
+export const OPAPINGOU_NOTIFICATION_EVENT_TYPE = 'notification';
 
 /**
- * Identifiers end up in a unique index, so their size is bounded.
+ * An authentic webhook delivery, in provider-neutral terms.
  */
-const MAX_IDENTIFIER_LENGTH = 255;
-
-const ZOpapingouIdSchema = z
-  .union([z.string().min(1).max(MAX_IDENTIFIER_LENGTH), z.number()])
-  .transform((value) => String(value));
-
-const ZOpapingouWebhookSchema = z.object({
-  id: ZOpapingouIdSchema.nullish(),
-  evento: z.string().min(1).max(MAX_IDENTIFIER_LENGTH),
-  cobranca: z
-    .object({
-      id: ZOpapingouIdSchema.nullish(),
-      referencia: z.string().min(1).max(MAX_IDENTIFIER_LENGTH).nullish(),
-      valor: z.union([z.string(), z.number()]).nullish(),
-      status: z.string().nullish(),
-    })
-    .nullish(),
-});
-
-/**
- * A payment provider webhook event, in provider-neutral terms.
- */
-export type TProviderWebhookEvent = {
+export type TProviderWebhookNotification = {
   /**
-   * "<event type>:<provider's event id>", or "sha256:<hash of the body>" when the
-   * provider sends no id.
-   *
-   * The event type is part of the id because it is not known whether the provider's
-   * id is unique per event or per charge. If it is per charge, an earlier event of
-   * another type must not be mistaken for the payment.
+   * "sha256:<hash of the body>". The provider's event id is not documented, so a
+   * delivery is identified by its bytes.
    */
   eventId: string;
   eventType: string;
-  isPayment: boolean;
-  providerChargeId: string | null;
-
-  /**
-   * Our own charge id, as sent when the charge was created.
-   */
-  reference: string | null;
-  amountCents: number | null;
 };
 
 export type SignOpapingouWebhookBodyOptions = {
@@ -120,28 +83,20 @@ export const verifyOpapingouWebhookSignature = ({
   return timingSafeEqual(Buffer.from(received, 'hex'), Buffer.from(expected, 'hex'));
 };
 
-export const parseOpapingouWebhookEvent = (rawBody: string): TProviderWebhookEvent | null => {
-  const parsed = ZOpapingouWebhookSchema.safeParse(parseJson(rawBody));
+/**
+ * Returns null unless the body is a JSON object, the only thing the reference says
+ * about it.
+ */
+export const parseOpapingouWebhookNotification = (rawBody: string): TProviderWebhookNotification | null => {
+  const body = parseJson(rawBody);
 
-  if (!parsed.success) {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
     return null;
   }
 
-  const { id, evento, cobranca } = parsed.data;
-
-  const amount = cobranca?.valor;
-  const chargeStatus = cobranca?.status;
-
-  const isPaidStatus =
-    chargeStatus === null || chargeStatus === undefined || chargeStatus === OPAPINGOU_PAID_CHARGE_STATUS;
-
   return {
-    eventId: id ? `${evento}:${id}` : `sha256:${createHash('sha256').update(rawBody, 'utf8').digest('hex')}`,
-    eventType: evento,
-    isPayment: evento === OPAPINGOU_PAYMENT_EVENT && isPaidStatus,
-    providerChargeId: cobranca?.id ?? null,
-    reference: cobranca?.referencia ?? null,
-    amountCents: amount === null || amount === undefined ? null : parseDecimalToCents(amount),
+    eventId: `sha256:${createHash('sha256').update(rawBody, 'utf8').digest('hex')}`,
+    eventType: OPAPINGOU_NOTIFICATION_EVENT_TYPE,
   };
 };
 

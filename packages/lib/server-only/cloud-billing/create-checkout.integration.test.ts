@@ -89,20 +89,22 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
     expect(charge.provider).toBe('opapingou');
     expect(charge.organisationId).toBe(organisationId);
     expect(charge.createdByUserId).toBe(userId);
-    expect(charge.providerChargeId).toMatch(/^cob_/);
+    expect(charge.providerChargeId).toMatch(/^[0-9a-f-]{36}$/);
 
     expect(checkout.amountCents).toBe(9990);
-    expect(checkout.paymentUrl).toBe(`https://pagamento.invalid/${charge.providerChargeId}`);
+    expect(checkout.paymentUrl).toBeNull();
     expect(checkout.pixCopyPaste).toBe(`00020126SIMULADO${charge.providerChargeId}`);
+    expect(checkout.expiresAt?.toISOString()).toBe('2026-10-16T12:00:00.000Z');
   });
 
-  it('sends the charge id as the reference', async () => {
+  it('sends the charge id as the idempotency key and the amount in cents', async () => {
     const checkout = await createCloudSubscriptionCheckout({ organisationId, userId, now: NOW });
 
-    const params = new URLSearchParams(api.requests[0].body);
+    const [request] = api.requests;
 
-    expect(params.get('referencia')).toBe(checkout.id);
-    expect(params.get('valor')).toBe('99.90');
+    expect(request.path).toBe('/v1/charges');
+    expect(request.headers['idempotency-key']).toBe(checkout.id);
+    expect(JSON.parse(request.body)).toMatchObject({ amountCents: 9990, validity: 'ONE_DAY', kind: 'PIX_QR' });
   });
 
   it('does not create a subscription before payment', async () => {
@@ -187,7 +189,7 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
   it('creates a charge when asked for a replacement and there is nothing to replace', async () => {
     const checkout = await createCloudSubscriptionCheckout({ organisationId, userId, now: NOW, isReplacement: true });
 
-    expect(checkout.paymentUrl).not.toBeNull();
+    expect(checkout.pixCopyPaste).not.toBeNull();
     expect(api.requests).toHaveLength(1);
   });
 
@@ -243,7 +245,7 @@ describe.skipIf(!hasTestDatabase)('createCloudSubscriptionCheckout', () => {
 
     const checkout = await createCloudSubscriptionCheckout({ organisationId, userId, now: NOW });
 
-    expect(checkout.paymentUrl).not.toBeNull();
+    expect(checkout.pixCopyPaste).not.toBeNull();
   });
 
   it('is not found when billing is disabled', async () => {

@@ -1,22 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  parseOpapingouWebhookEvent,
+  parseOpapingouWebhookNotification,
   signOpapingouWebhookBody,
   verifyOpapingouWebhookSignature,
 } from './opapingou-webhook';
 
 const SECRET = 'webhook-secret-for-tests';
 
+// The provider has not decided the body of its webhooks; any JSON object will do here.
 const PAYMENT_EVENT = {
-  id: 'evt_1',
-  evento: 'pingou',
-  cobranca: {
-    id: 'cob_1',
-    referencia: 'charge_reference_1',
-    valor: '99.90',
-    status: 'pingou',
-  },
+  type: 'charge.paid',
+  data: { id: 'c0ffee00-0000-4000-8000-000000000001', amountCents: 9990 },
 };
 
 const RAW_BODY = JSON.stringify(PAYMENT_EVENT);
@@ -51,7 +46,7 @@ describe('verifyOpapingouWebhookSignature', () => {
   });
 
   it('rejects a body changed by one character', () => {
-    const tampered = RAW_BODY.replace('99.90', '99.91');
+    const tampered = RAW_BODY.replace('9990', '9991');
 
     expect(verifyOpapingouWebhookSignature({ rawBody: tampered, signature, secret: SECRET })).toBe(false);
   });
@@ -89,106 +84,25 @@ describe('verifyOpapingouWebhookSignature', () => {
   });
 });
 
-describe('parseOpapingouWebhookEvent', () => {
-  it('reads a payment event', () => {
-    expect(parseOpapingouWebhookEvent(RAW_BODY)).toEqual({
-      eventId: 'pingou:evt_1',
-      eventType: 'pingou',
-      isPayment: true,
-      providerChargeId: 'cob_1',
-      reference: 'charge_reference_1',
-      amountCents: 9990,
+describe('parseOpapingouWebhookNotification', () => {
+  it('identifies a delivery by the hash of its bytes', () => {
+    const notification = parseOpapingouWebhookNotification(RAW_BODY);
+
+    expect(notification).toEqual({
+      eventId: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      eventType: 'notification',
     });
-  });
-
-  it('reads a numeric amount', () => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, valor: 99.9 } }),
+    expect(parseOpapingouWebhookNotification(RAW_BODY)?.eventId).toBe(notification?.eventId);
+    expect(parseOpapingouWebhookNotification(JSON.stringify({ type: 'other' }))?.eventId).not.toBe(
+      notification?.eventId,
     );
-
-    expect(event?.amountCents).toBe(9990);
-  });
-
-  it('reads numeric ids as strings', () => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ id: 77, evento: 'pingou', cobranca: { id: 123, valor: '99.90' } }),
-    );
-
-    expect(event?.eventId).toBe('pingou:77');
-    expect(event?.providerChargeId).toBe('123');
-    expect(event?.reference).toBeNull();
-  });
-
-  it('leaves the amount null when it cannot be read', () => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, valor: 'noventa' } }),
-    );
-
-    expect(event?.isPayment).toBe(true);
-    expect(event?.amountCents).toBeNull();
-  });
-
-  it('derives a stable event id from the body when the provider sends none', () => {
-    const { id: _id, ...withoutId } = PAYMENT_EVENT;
-
-    const first = parseOpapingouWebhookEvent(JSON.stringify(withoutId));
-    const second = parseOpapingouWebhookEvent(JSON.stringify(withoutId));
-    const different = parseOpapingouWebhookEvent(JSON.stringify({ ...withoutId, evento: 'outro' }));
-
-    expect(first?.eventId).toMatch(/^sha256:[0-9a-f]{64}$/);
-    expect(second?.eventId).toBe(first?.eventId);
-    expect(different?.eventId).not.toBe(first?.eventId);
-  });
-
-  it('flags other event types as not a payment', () => {
-    const event = parseOpapingouWebhookEvent(JSON.stringify({ id: 'evt_2', evento: 'cobranca_expirada' }));
-
-    expect(event).toEqual({
-      eventId: 'cobranca_expirada:evt_2',
-      eventType: 'cobranca_expirada',
-      isPayment: false,
-      providerChargeId: null,
-      reference: null,
-      amountCents: null,
-    });
-  });
-
-  it('gives different event ids to different events that share the provider id', () => {
-    const created = parseOpapingouWebhookEvent(JSON.stringify({ id: 'cob_1', evento: 'cobranca_criada' }));
-    const paid = parseOpapingouWebhookEvent(JSON.stringify({ ...PAYMENT_EVENT, id: 'cob_1' }));
-
-    expect(created?.eventId).toBe('cobranca_criada:cob_1');
-    expect(paid?.eventId).toBe('pingou:cob_1');
-  });
-
-  it('is a payment when the charge status is absent', () => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ id: 'evt_1', evento: 'pingou', cobranca: { id: 'cob_1', valor: '99.90' } }),
-    );
-
-    expect(event?.isPayment).toBe(true);
   });
 
   it.each([
-    'pendente',
-    'criada',
-    'expirada',
-    '',
-  ])('is not a payment when the charge status is %j, even for the payment event', (status) => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, status } }),
-    );
-
-    expect(event?.isPayment).toBe(false);
-  });
-
-  it.each([
-    ['event id', { ...PAYMENT_EVENT, id: 'a'.repeat(256) }],
-    ['event name', { ...PAYMENT_EVENT, evento: 'a'.repeat(256) }],
-    ['charge id', { ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, id: 'a'.repeat(256) } }],
-    ['reference', { ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, referencia: 'a'.repeat(256) } }],
-  ])('returns null for an oversized %s', (_label, body) => {
-    expect(parseOpapingouWebhookEvent(JSON.stringify(body))).toBeNull();
+    ['the old presumed format', { id: 'evt_1', evento: 'pingou', cobranca: { valor: '99.90' } }],
+    ['an empty object', {}],
+  ])('accepts %s without reading it', (_label, body) => {
+    expect(parseOpapingouWebhookNotification(JSON.stringify(body))).not.toBeNull();
   });
 
   it.each([
@@ -197,10 +111,8 @@ describe('parseOpapingouWebhookEvent', () => {
     ['an array', '[]'],
     ['null', 'null'],
     ['a string', '"pingou"'],
-    ['an object without the event name', JSON.stringify({ id: 'evt_3' })],
-    ['an empty event name', JSON.stringify({ id: 'evt_3', evento: '' })],
-    ['a non-string event name', JSON.stringify({ id: 'evt_3', evento: 42 })],
+    ['a number', '42'],
   ])('returns null for %s', (_label, rawBody) => {
-    expect(parseOpapingouWebhookEvent(rawBody)).toBeNull();
+    expect(parseOpapingouWebhookNotification(rawBody)).toBeNull();
   });
 });

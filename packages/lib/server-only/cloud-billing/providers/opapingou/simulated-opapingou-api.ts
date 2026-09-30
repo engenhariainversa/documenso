@@ -5,9 +5,9 @@ import type { AddressInfo } from 'node:net';
 /**
  * Simulated Opa Pingou API, for tests only.
  *
- * It implements the contract the adapter ASSUMES (see the spec), since the provider
- * publishes no API reference. It listens on 127.0.0.1 only and never reaches the
- * real API.
+ * It implements the charge routes of the provider's REST reference (`/v1/charges`,
+ * see `opapingou-client.ts`) and signs webhooks the way the adapter ASSUMES (see
+ * `opapingou-webhook.ts`). It listens on 127.0.0.1 only and never reaches the real API.
  */
 export const SIMULATED_OPAPINGOU_API_KEY = 'simulated-api-key';
 export const SIMULATED_OPAPINGOU_WEBHOOK_SECRET = 'simulated-webhook-secret';
@@ -26,16 +26,36 @@ export type TSimulatedResponse = {
   headers?: Record<string, string>;
 };
 
+export type TSimulatedChargeStatus = 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELED';
+
+type TSimulatedCharge = {
+  id: string;
+  amountCents: number;
+  description: string | null;
+  validity: string;
+  kind: string;
+  status: TSimulatedChargeStatus;
+  paidAt: string | null;
+  createdAt: string;
+};
+
 export type StartSimulatedOpapingouApiOptions = {
   apiKey?: string;
   webhookSecret?: string;
 };
+
+const SIMULATED_EXPIRES_AT = '2026-10-16T12:00:00.000Z';
 
 export const startSimulatedOpapingouApi = async ({
   apiKey = SIMULATED_OPAPINGOU_API_KEY,
   webhookSecret = SIMULATED_OPAPINGOU_WEBHOOK_SECRET,
 }: StartSimulatedOpapingouApiOptions = {}) => {
   const requests: TSimulatedRequest[] = [];
+
+  const charges = new Map<string, TSimulatedCharge>();
+
+  // Charges created with an `Idempotency-Key`, by key.
+  const idempotentCharges = new Map<string, string>();
 
   let nextResponse: TSimulatedResponse | null = null;
 
@@ -54,7 +74,7 @@ export const startSimulatedOpapingouApi = async ({
         body,
       });
 
-      const response = nextResponse ?? buildDefaultResponse({ req, body, apiKey });
+      const response = nextResponse ?? buildDefaultResponse({ req, body, apiKey, charges, idempotentCharges });
 
       nextResponse = null;
 
@@ -78,7 +98,31 @@ export const startSimulatedOpapingouApi = async ({
     setNextResponse: (response: TSimulatedResponse) => {
       nextResponse = response;
     },
-    buildSignedWebhook: (event: Record<string, unknown>) => {
+    /**
+     * Changes a charge the way the provider would after the payer acts on it.
+     */
+    updateCharge: (
+      id: string,
+      update: { status?: TSimulatedChargeStatus; amountCents?: number; paidAt?: string | null },
+    ) => {
+      const charge = charges.get(id);
+
+      if (!charge) {
+        throw new Error(`Unknown simulated charge ${id}`);
+      }
+
+      const { status = charge.status, amountCents = charge.amountCents } = update;
+
+      const defaultPaidAt = status === 'PAID' ? new Date().toISOString() : charge.paidAt;
+
+      charges.set(id, {
+        ...charge,
+        status,
+        amountCents,
+        paidAt: update.paidAt !== undefined ? update.paidAt : defaultPaidAt,
+      });
+    },
+    buildSignedWebhook: (event: unknown) => {
       const rawBody = JSON.stringify(event);
 
       const signature = createHmac('sha256', webhookSecret).update(rawBody, 'utf8').digest('hex');
@@ -105,35 +149,124 @@ type BuildDefaultResponseOptions = {
   req: { method?: string; url?: string; headers: Record<string, string | string[] | undefined> };
   body: string;
   apiKey: string;
+  charges: Map<string, TSimulatedCharge>;
+  idempotentCharges: Map<string, string>;
 };
 
-const buildDefaultResponse = ({ req, body, apiKey }: BuildDefaultResponseOptions): TSimulatedResponse => {
-  if (req.method !== 'POST' || req.url !== '/v1/cobranca') {
-    return { status: 404, body: JSON.stringify({ erro: 'nao_encontrado' }) };
-  }
+const CHARGE_PATH_REGEX = /^\/v1\/charges\/([^/?]+)$/;
 
+const buildDefaultResponse = ({
+  req,
+  body,
+  apiKey,
+  charges,
+  idempotentCharges,
+}: BuildDefaultResponseOptions): TSimulatedResponse => {
   if (req.headers.authorization !== `Bearer ${apiKey}`) {
-    return { status: 401, body: JSON.stringify({ erro: 'nao_autorizado' }) };
+    return problem(401, 'Unauthorized');
   }
 
-  const params = new URLSearchParams(body);
-
-  if (!params.get('valor')) {
-    return { status: 422, body: JSON.stringify({ erro: 'valor_obrigatorio' }) };
+  if (req.method === 'POST' && req.url === '/v1/charges') {
+    return createCharge({ req, body, charges, idempotentCharges });
   }
 
-  const id = `cob_${randomUUID()}`;
+  const match = req.method === 'GET' ? CHARGE_PATH_REGEX.exec(req.url ?? '') : null;
 
-  return {
-    status: 201,
-    body: JSON.stringify({
-      id,
-      status: 'pendente',
-      valor: params.get('valor'),
-      referencia: params.get('referencia'),
-      url_pagamento: `https://pagamento.invalid/${id}`,
-      pix_copia_e_cola: `00020126SIMULADO${id}`,
-      expira_em: '2026-10-16T12:00:00.000Z',
-    }),
+  if (match) {
+    const charge = charges.get(decodeURIComponent(match[1]));
+
+    return charge ? { status: 200, body: JSON.stringify(serialiseCharge(charge)) } : problem(404, 'Not Found');
+  }
+
+  return problem(404, 'Not Found');
+};
+
+type CreateChargeOptions = Omit<BuildDefaultResponseOptions, 'apiKey'>;
+
+const createCharge = ({ req, body, charges, idempotentCharges }: CreateChargeOptions): TSimulatedResponse => {
+  const input = parseJsonObject(body);
+
+  const amountCents = input?.amountCents;
+  const validity = input?.validity;
+
+  if (typeof amountCents !== 'number' || !Number.isSafeInteger(amountCents) || amountCents <= 0) {
+    return problem(400, 'Bad Request');
+  }
+
+  if (typeof validity !== 'string') {
+    return problem(400, 'Bad Request');
+  }
+
+  const idempotencyKey = req.headers['idempotency-key'];
+
+  if (typeof idempotencyKey === 'string') {
+    const existingId = idempotentCharges.get(idempotencyKey);
+    const existing = existingId ? charges.get(existingId) : undefined;
+
+    if (existing) {
+      return { status: 201, body: JSON.stringify(serialiseCharge(existing)) };
+    }
+  }
+
+  const charge: TSimulatedCharge = {
+    id: randomUUID(),
+    amountCents,
+    description: typeof input?.description === 'string' ? input.description : null,
+    validity,
+    kind: typeof input?.kind === 'string' ? input.kind : 'PIX_QR',
+    status: 'PENDING',
+    paidAt: null,
+    createdAt: new Date().toISOString(),
   };
+
+  charges.set(charge.id, charge);
+
+  if (typeof idempotencyKey === 'string') {
+    idempotentCharges.set(idempotencyKey, charge.id);
+  }
+
+  return { status: 201, body: JSON.stringify(serialiseCharge(charge)) };
+};
+
+/**
+ * The `Charge` object of the provider's reference.
+ */
+const serialiseCharge = (charge: TSimulatedCharge) => ({
+  id: charge.id,
+  bankAccountId: 'simulated-bank-account',
+  amountCents: charge.amountCents,
+  description: charge.description,
+  validity: charge.validity,
+  expiresAt: SIMULATED_EXPIRES_AT,
+  status: charge.status,
+  kind: charge.kind,
+  txid: charge.id.replaceAll('-', ''),
+  brCode: `00020126SIMULADO${charge.id}`,
+  paymentLink: null,
+  providerRef: charge.id,
+  paymentId: charge.status === 'PAID' ? `payment-${charge.id}` : null,
+  feeCents: 0,
+  feeAvoidedCents: 0,
+  routingReason: 'simulado',
+  paidAt: charge.paidAt,
+  createdAt: charge.createdAt,
+});
+
+const problem = (status: number, title: string): TSimulatedResponse => ({
+  status,
+  body: JSON.stringify({ type: 'about:blank', title, status, detail: 'detalhe-interno-do-provedor' }),
+  headers: { 'content-type': 'application/problem+json' },
+});
+
+const parseJsonObject = (body: string): Record<string, unknown> | null => {
+  try {
+    const value: unknown = JSON.parse(body);
+
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        (value as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
 };
