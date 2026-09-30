@@ -8,6 +8,7 @@ import {
   AlertTriangleIcon,
   BarChart3,
   Building2Icon,
+  ClipboardListIcon,
   FileStack,
   LineChartIcon,
   MailIcon,
@@ -94,6 +95,17 @@ export default function AdminLayout() {
             <Link to="/admin/users">
               <Users className="mr-2 h-5 w-5" />
               <Trans>Users</Trans>
+            </Link>
+          </Button>
+
+          <Button
+            variant="ghost"
+            className={cn('justify-start md:w-full', pathname?.startsWith('/admin/waitlist') && 'bg-secondary')}
+            asChild
+          >
+            <Link to="/admin/waitlist">
+              <ClipboardListIcon className="mr-2 h-5 w-5" />
+              <Trans>Waitlist</Trans>
             </Link>
           </Button>
 

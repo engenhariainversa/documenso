@@ -1,14 +1,16 @@
 import { APP_NAME, APP_SOURCE_URL } from '@documenso/lib/constants/brand';
 import type { LandingLanguage } from '@documenso/lib/utils/landing-language';
 import { formatLandingPlanPrice, LANDING_PLANS, type LandingPlanId } from '@documenso/lib/utils/landing-pricing';
+import type { LandingSignupAction } from '@documenso/lib/utils/landing-waitlist';
 import { cn } from '@documenso/ui/lib/utils';
 import { Button } from '@documenso/ui/primitives/button';
 import { CheckIcon, ExternalLinkIcon } from 'lucide-react';
 import { Link } from 'react-router';
+import { match } from 'ts-pattern';
 
 export type LandingPricingSectionProps = {
   lang: LandingLanguage;
-  isSignupEnabled: boolean;
+  signupAction: LandingSignupAction;
 };
 
 /**
@@ -17,7 +19,7 @@ export type LandingPricingSectionProps = {
  * The copy lives in this file for the same reason as the rest of the landing page:
  * Portuguese is the main language here.
  */
-export const LandingPricingSection = ({ lang, isSignupEnabled }: LandingPricingSectionProps) => {
+export const LandingPricingSection = ({ lang, signupAction }: LandingPricingSectionProps) => {
   const copy = LANDING_PRICING_COPY[lang];
 
   return (
@@ -63,9 +65,11 @@ export const LandingPricingSection = ({ lang, isSignupEnabled }: LandingPricingS
                 <div className="mt-8">
                   {isCloud ? (
                     <Button asChild className="w-full">
-                      <Link to={isSignupEnabled ? '/signup' : '/signin'}>
-                        {isSignupEnabled ? planCopy.action : copy.signIn}
-                      </Link>
+                      {match(signupAction)
+                        .with('signup', () => <Link to="/signup">{planCopy.action}</Link>)
+                        .with('waitlist', () => <a href="#waitlist">{copy.joinWaitlist}</a>)
+                        .with('none', () => <Link to="/signin">{copy.signIn}</Link>)
+                        .exhaustive()}
                     </Button>
                   ) : (
                     <Button asChild variant="outline" className="w-full">
@@ -100,6 +104,7 @@ type LandingPricingCopy = {
   description: string;
   perMonth: string;
   signIn: string;
+  joinWaitlist: string;
   plans: Record<LandingPlanId, LandingPlanCopy>;
 };
 
@@ -109,6 +114,7 @@ export const LANDING_PRICING_COPY: Record<LandingLanguage, LandingPricingCopy> =
     description: `O ${APP_NAME} é o mesmo nos dois planos. A diferença é quem cuida do servidor.`,
     perMonth: 'por mês',
     signIn: 'Entrar',
+    joinWaitlist: 'Entrar na lista de espera',
     plans: {
       'self-hosted': {
         name: 'Auto-hospedado',
@@ -140,6 +146,7 @@ export const LANDING_PRICING_COPY: Record<LandingLanguage, LandingPricingCopy> =
     description: `${APP_NAME} is the same on both plans. The difference is who runs the server.`,
     perMonth: 'per month',
     signIn: 'Sign in',
+    joinWaitlist: 'Join the waitlist',
     plans: {
       'self-hosted': {
         name: 'Self-hosted',

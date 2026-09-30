@@ -1,5 +1,6 @@
 import { APP_NAME, APP_SOURCE_URL, APP_UPSTREAM_URL } from '@documenso/lib/constants/brand';
 import type { LandingLanguage } from '@documenso/lib/utils/landing-language';
+import { getLandingSignupAction } from '@documenso/lib/utils/landing-waitlist';
 import { Button } from '@documenso/ui/primitives/button';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -16,6 +17,7 @@ import {
 import { Link } from 'react-router';
 
 import { LandingPricingSection } from '~/components/docverse/landing-pricing-section';
+import { LandingWaitlistSection } from '~/components/docverse/landing-waitlist-section';
 import { BrandingLogo } from '~/components/general/branding-logo';
 
 export type LandingPageProps = {
@@ -26,6 +28,11 @@ export type LandingPageProps = {
    * Whether to show the plans. Only true on an instance that sells the cloud plan.
    */
   isPricingVisible?: boolean;
+
+  /**
+   * Whether the waitlist form is shown (`NEXT_PUBLIC_WAITLIST_ENABLED`).
+   */
+  isWaitlistEnabled?: boolean;
 };
 
 /**
@@ -36,8 +43,15 @@ export type LandingPageProps = {
  *
  * Only list features that exist in the codebase today.
  */
-export const LandingPage = ({ lang, isSignupEnabled, isPricingVisible = false }: LandingPageProps) => {
+export const LandingPage = ({
+  lang,
+  isSignupEnabled,
+  isPricingVisible = false,
+  isWaitlistEnabled = false,
+}: LandingPageProps) => {
   const copy = LANDING_COPY[lang];
+
+  const signupAction = getLandingSignupAction({ isSignupEnabled, isWaitlistEnabled });
 
   const otherLang: LandingLanguage = lang === 'pt-BR' ? 'en' : 'pt-BR';
 
@@ -62,9 +76,15 @@ export const LandingPage = ({ lang, isSignupEnabled, isPricingVisible = false }:
               <Link to="/signin">{copy.signIn}</Link>
             </Button>
 
-            {isSignupEnabled && (
+            {signupAction === 'signup' && (
               <Button asChild size="sm" className="hidden sm:inline-flex">
                 <Link to="/signup">{copy.signUp}</Link>
+              </Button>
+            )}
+
+            {signupAction === 'waitlist' && (
+              <Button asChild size="sm" className="hidden sm:inline-flex">
+                <a href="#waitlist">{copy.joinWaitlist}</a>
               </Button>
             )}
           </nav>
@@ -86,13 +106,19 @@ export const LandingPage = ({ lang, isSignupEnabled, isPricingVisible = false }:
           </p>
 
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            {isSignupEnabled && (
+            {signupAction === 'signup' && (
               <Button asChild size="lg">
                 <Link to="/signup">{copy.signUp}</Link>
               </Button>
             )}
 
-            <Button asChild size="lg" variant={isSignupEnabled ? 'outline' : 'default'}>
+            {signupAction === 'waitlist' && (
+              <Button asChild size="lg">
+                <a href="#waitlist">{copy.joinWaitlist}</a>
+              </Button>
+            )}
+
+            <Button asChild size="lg" variant={signupAction === 'none' ? 'default' : 'outline'}>
               <Link to="/signin">{copy.signIn}</Link>
             </Button>
           </div>
@@ -147,7 +173,9 @@ export const LandingPage = ({ lang, isSignupEnabled, isPricingVisible = false }:
           </div>
         </section>
 
-        {isPricingVisible && <LandingPricingSection lang={lang} isSignupEnabled={isSignupEnabled} />}
+        {isWaitlistEnabled && <LandingWaitlistSection lang={lang} isSignupEnabled={isSignupEnabled} />}
+
+        {isPricingVisible && <LandingPricingSection lang={lang} signupAction={signupAction} />}
 
         <section className="border-border border-t bg-muted/30">
           <div className="mx-auto w-full max-w-5xl px-4 py-14 md:px-8">
@@ -222,6 +250,7 @@ type LandingCopy = {
   switchLanguage: string;
   signIn: string;
   signUp: string;
+  joinWaitlist: string;
   badge: string;
   title: string;
   description: string;
@@ -255,6 +284,7 @@ export const LANDING_COPY: Record<LandingLanguage, LandingCopy> = {
     switchLanguage: 'English',
     signIn: 'Entrar',
     signUp: 'Criar conta',
+    joinWaitlist: 'Entrar na lista de espera',
     badge: '100% open source · AGPLv3',
     title: 'Assinatura eletrônica de documentos, em código aberto',
     description: `O ${APP_NAME} é uma plataforma de assinatura eletrônica de documentos. Todo o código é aberto sob a licença AGPLv3: você pode usar esta instância ou hospedar a sua.`,
@@ -328,6 +358,7 @@ export const LANDING_COPY: Record<LandingLanguage, LandingCopy> = {
     switchLanguage: 'Português',
     signIn: 'Sign in',
     signUp: 'Create account',
+    joinWaitlist: 'Join the waitlist',
     badge: '100% open source · AGPLv3',
     title: 'Electronic document signing, open source',
     description: `${APP_NAME} is an electronic document signing platform. All of the code is open under the AGPLv3 license: you can use this instance or host your own.`,

@@ -16,6 +16,8 @@ import { SEND_RECIPIENT_SIGNED_EMAIL_JOB_DEFINITION } from './definitions/emails
 import { SEND_SIGNING_REJECTION_EMAILS_JOB_DEFINITION } from './definitions/emails/send-rejection-emails';
 import { SEND_SIGNING_EMAIL_JOB_DEFINITION } from './definitions/emails/send-signing-email';
 import { SEND_TEAM_DELETED_EMAIL_JOB_DEFINITION } from './definitions/emails/send-team-deleted-email';
+import { SEND_WAITLIST_INVITE_EMAIL_JOB_DEFINITION } from './definitions/emails/send-waitlist-invite-email';
+import { SEND_WAITLIST_JOINED_EMAILS_JOB_DEFINITION } from './definitions/emails/send-waitlist-joined-emails';
 import { ADMIN_DELETE_ORGANISATION_JOB_DEFINITION } from './definitions/internal/admin-delete-organisation';
 import { ALERT_ORGANISATION_SEAT_DRIFT_JOB_DEFINITION } from './definitions/internal/alert-organisation-seat-drift';
 import { BACKPORT_SUBSCRIPTION_CLAIM_JOB_DEFINITION } from './definitions/internal/backport-subscription-claims';
@@ -35,6 +37,8 @@ import { SEND_SIGNING_REMINDERS_SWEEP_JOB_DEFINITION } from './definitions/inter
  */
 export const jobsClient = new JobClient([
   SEND_ADMIN_USER_CREATED_EMAIL_JOB_DEFINITION,
+  SEND_WAITLIST_JOINED_EMAILS_JOB_DEFINITION,
+  SEND_WAITLIST_INVITE_EMAIL_JOB_DEFINITION,
   SEND_SIGNING_EMAIL_JOB_DEFINITION,
   SEND_CONFIRMATION_EMAIL_JOB_DEFINITION,
   SEND_ORGANISATION_MEMBER_JOINED_EMAIL_JOB_DEFINITION,

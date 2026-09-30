@@ -10,6 +10,7 @@ import { PREFERRED_TEAM_URL_COOKIE } from '@documenso/lib/constants/cookies';
 import { getTeams } from '@documenso/lib/server-only/team/get-teams';
 import { DEFAULT_LANDING_LANGUAGE, resolveLandingLanguage } from '@documenso/lib/utils/landing-language';
 import { isLandingPricingVisible } from '@documenso/lib/utils/landing-pricing';
+import { isWaitlistEnabled } from '@documenso/lib/utils/landing-waitlist';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { ZTeamUrlSchema } from '@documenso/trpc/server/team-router/schema';
 import { redirect } from 'react-router';
@@ -85,11 +86,19 @@ export async function loader({ request }: Route.LoaderArgs) {
     }),
     isSignupEnabled,
     isPricingVisible: isLandingPricingVisible(),
+    isWaitlistEnabled: isWaitlistEnabled(),
   };
 }
 
 export default function Index({ loaderData }: Route.ComponentProps) {
-  const { lang, isSignupEnabled, isPricingVisible } = loaderData;
+  const { lang, isSignupEnabled, isPricingVisible, isWaitlistEnabled } = loaderData;
 
-  return <LandingPage lang={lang} isSignupEnabled={isSignupEnabled} isPricingVisible={isPricingVisible} />;
+  return (
+    <LandingPage
+      lang={lang}
+      isSignupEnabled={isSignupEnabled}
+      isPricingVisible={isPricingVisible}
+      isWaitlistEnabled={isWaitlistEnabled}
+    />
+  );
 }

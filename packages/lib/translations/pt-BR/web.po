@@ -14818,3 +14818,153 @@ msgstr "por mês"
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
 msgid "Subscribe"
 msgstr "Assinar"
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+msgid "Hi {name}, we saved your name, email ({email}) and phone ({phone}) to let you know when access opens."
+msgstr "Olá, {name}. Guardamos seu nome, e-mail ({email}) e telefone ({phone}) para avisar quando o acesso for liberado."
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "New waitlist entry"
+msgstr "Nova inscrição na lista de espera"
+
+#. placeholder {0}: entry.name
+#: packages/lib/jobs/definitions/emails/send-waitlist-joined-emails.handler.ts
+msgid "New waitlist entry: {0}"
+msgstr "Nova inscrição na lista de espera: {0}"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "New waitlist entry: {name}"
+msgstr "Nova inscrição na lista de espera: {name}"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "Open the waitlist"
+msgstr "Abrir a lista de espera"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "Phone"
+msgstr "Telefone"
+
+#: packages/email/templates/waitlist-notice.tsx
+msgid "Signed up at"
+msgstr "Inscrito em"
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+msgid "To be removed from the list, write to <0>{SUPPORT_EMAIL}</0>."
+msgstr "Para sair da lista, escreva para <0>{SUPPORT_EMAIL}</0>."
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+msgid "We will send you an email when your access is ready. Nothing else will be sent."
+msgstr "Vamos enviar um e-mail quando o seu acesso estiver liberado. Nada mais será enviado."
+
+#: packages/email/template-components/template-waitlist-joined.tsx
+#: packages/email/templates/waitlist-joined.tsx
+#: packages/lib/jobs/definitions/emails/send-waitlist-joined-emails.handler.ts
+msgid "You are on the Docverse waitlist"
+msgstr "Você está na lista de espera do Docverse"
+
+#: packages/email/template-components/template-waitlist-invite.tsx
+msgid "Hi {name}, thank you for waiting. Your account has been created; set your password to get started."
+msgstr "Olá, {name}. Obrigado por esperar. Sua conta foi criada; defina a senha para começar."
+
+#: packages/email/template-components/template-waitlist-invite.tsx
+msgid "Set password"
+msgstr "Definir senha"
+
+#: packages/email/template-components/template-waitlist-invite.tsx
+msgid "You can also copy and paste this link into your browser: {setPasswordLink} (the link expires in 7 days; after that, use \"Forgot password\" on the sign in page)"
+msgstr "Você também pode copiar e colar este link no navegador: {setPasswordLink} (o link vence em 7 dias; depois disso, use \"Esqueci minha senha\" na tela de entrada)"
+
+#: packages/email/template-components/template-waitlist-invite.tsx
+#: packages/email/templates/waitlist-invite.tsx
+#: packages/lib/jobs/definitions/emails/send-waitlist-invite-email.handler.ts
+msgid "Your Docverse access is ready"
+msgstr "Seu acesso ao Docverse foi liberado"
+
+#: apps/remix/app/routes/_authenticated+/admin+/waitlist._index.tsx
+msgid "{count} people on the list"
+msgstr "{count} pessoas na lista"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "{invited} invited, {resent} resent, {existing} already had an account, {failed} failed"
+msgstr "{invited} convidadas, {resent} reenviadas, {existing} já tinham conta, {failed} falharam"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Already had an account"
+msgstr "Já tinha conta"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "An account will be created for {0} and the person will receive an email with a link to set the password. If the email already has an account, only the invite date is recorded."
+msgstr "Uma conta será criada para {0} e a pessoa receberá um e-mail com o link para definir a senha. Se o e-mail já tiver conta, só a data do convite é registrada."
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "An account will be created for each selected person, who will receive an email with a link to set the password. People whose email already has an account only get the invite date recorded."
+msgstr "Uma conta será criada para cada pessoa selecionada, que receberá um e-mail com o link para definir a senha. Quem já tem conta com o e-mail só recebe o registro da data do convite."
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Could not export the waitlist"
+msgstr "Não foi possível exportar a lista de espera"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Could not remove the entry"
+msgstr "Não foi possível remover a inscrição"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Could not send the invites"
+msgstr "Não foi possível enviar os convites"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Entry removed"
+msgstr "Inscrição removida"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Export CSV"
+msgstr "Exportar CSV"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Invite {0}?"
+msgstr "Convidar {0}?"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Invite {selectedCount} people?"
+msgstr "Convidar {selectedCount} pessoas?"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Invite selected ({selectedCount})"
+msgstr "Convidar selecionados ({selectedCount})"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Invites processed"
+msgstr "Convites processados"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Not invited"
+msgstr "Não convidado"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Remove {0} from the waitlist?"
+msgstr "Remover {0} da lista de espera?"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Select {0}"
+msgstr "Selecionar {0}"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "Select all on this page"
+msgstr "Selecionar todos desta página"
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "The entry is deleted permanently. Use this to fulfil a removal request. Accounts already created by an invite are not affected."
+msgstr "A inscrição é apagada de forma permanente. Use para atender um pedido de remoção. Contas já criadas por um convite não são afetadas."
+
+#: apps/remix/app/components/tables/admin-waitlist-table.tsx
+msgid "The person is no longer on the waitlist."
+msgstr "A pessoa não está mais na lista de espera."
+
+#: apps/remix/app/routes/_authenticated+/admin+/waitlist._index.tsx
+msgid "The waitlist form is not shown on the landing page. Set NEXT_PUBLIC_WAITLIST_ENABLED=true to accept new entries. The entries below can still be managed."
+msgstr "O formulário da lista de espera não está aparecendo na landing page. Defina NEXT_PUBLIC_WAITLIST_ENABLED=true para aceitar novas inscrições. As inscrições abaixo continuam podendo ser gerenciadas."
+
+#: apps/remix/app/routes/_authenticated+/admin+/_layout.tsx
+#: apps/remix/app/routes/_authenticated+/admin+/waitlist._index.tsx
+msgid "Waitlist"
+msgstr "Lista de espera"

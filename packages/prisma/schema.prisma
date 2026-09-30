@@ -1348,3 +1348,25 @@ model RateLimit {
   @@id([key, action, bucket])
   @@index([createdAt])
 }
+
+/// Docverse: sign-ups from the landing page waitlist, shown when public signup is closed.
+model WaitlistEntry {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  /// E.164, e.g. "+5562999999999"
+  phone          String
+  /// Language of the form and of the emails: "pt-BR" or "en"
+  locale         String
+  source         String    @default("landing")
+  /// Version of the consent text the person agreed to
+  consentVersion String
+  consentedAt    DateTime
+  createdAt      DateTime  @default(now())
+  /// Last invite sent from the admin; null = not invited yet
+  invitedAt      DateTime?
+  /// User created (or found) by the invite. No relation on purpose: deleting the user must not depend on the waitlist.
+  invitedUserId  Int?
+
+  @@index([createdAt])
+}

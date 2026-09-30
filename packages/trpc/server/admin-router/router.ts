@@ -41,6 +41,10 @@ import { updateRecipientRoute } from './update-recipient';
 import { updateSiteSettingRoute } from './update-site-setting';
 import { updateSubscriptionClaimRoute } from './update-subscription-claim';
 import { updateUserRoute } from './update-user';
+import { deleteWaitlistEntryRoute } from './waitlist/delete-waitlist-entry';
+import { exportWaitlistEntriesRoute } from './waitlist/export-waitlist-entries';
+import { findWaitlistEntriesRoute } from './waitlist/find-waitlist-entries';
+import { inviteWaitlistEntriesRoute } from './waitlist/invite-waitlist-entries';
 
 export const adminRouter = router({
   organisation: {
@@ -103,6 +107,12 @@ export const adminRouter = router({
   },
   team: {
     get: getAdminTeamRoute,
+  },
+  waitlist: {
+    find: findWaitlistEntriesRoute,
+    export: exportWaitlistEntriesRoute,
+    invite: inviteWaitlistEntriesRoute,
+    delete: deleteWaitlistEntryRoute,
   },
   teamMember: {
     delete: deleteAdminTeamMemberRoute,
