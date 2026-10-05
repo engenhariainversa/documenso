@@ -5,6 +5,8 @@ export const ZCloudSubscriptionStateSchema = z.enum(['DISABLED', 'NONE', 'ACTIVE
 export const ZCloudCheckoutChargeSchema = z.object({
   id: z.string(),
   amountCents: z.number(),
+  discountCents: z.number(),
+  couponCode: z.string().nullable(),
   currency: z.string(),
   paymentUrl: z.string().nullable(),
   pixCopyPaste: z.string().nullable(),

@@ -122,6 +122,9 @@ describe('parseOpapingouWebhookNotification', () => {
       eventType: 'charge.paid',
       testMode: true,
       providerChargeId: CHARGE_ID,
+      providerPaymentId: null,
+      paymentChargeId: null,
+      paymentAmountCents: null,
     });
   });
 
@@ -139,6 +142,9 @@ describe('parseOpapingouWebhookNotification', () => {
       eventType: 'ping',
       testMode: false,
       providerChargeId: null,
+      providerPaymentId: null,
+      paymentChargeId: null,
+      paymentAmountCents: null,
     });
   });
 
@@ -150,6 +156,38 @@ describe('parseOpapingouWebhookNotification', () => {
     };
 
     expect(parseOpapingouWebhookNotification(JSON.stringify(payment))?.providerChargeId).toBeNull();
+  });
+
+  it.each(['payment.refunded', 'payment.charged_back'])('reads the payment and the charge it paid from %s', (type) => {
+    const event = {
+      ...CHARGE_PAID_EVENT,
+      type,
+      data: {
+        type: 'payment',
+        object: { id: 'payment-id', amountCents: 9990, status: 'REFUNDED', charge: { id: CHARGE_ID, kind: 'PIX_QR' } },
+      },
+    };
+
+    expect(parseOpapingouWebhookNotification(JSON.stringify(event))).toMatchObject({
+      eventType: type,
+      providerChargeId: null,
+      providerPaymentId: 'payment-id',
+      paymentChargeId: CHARGE_ID,
+      paymentAmountCents: 9990,
+    });
+  });
+
+  it('reads a payment that did not come from a charge', () => {
+    const event = {
+      ...CHARGE_PAID_EVENT,
+      type: 'payment.refunded',
+      data: { type: 'payment', object: { id: 'payment-id', amountCents: 500, charge: null } },
+    };
+
+    expect(parseOpapingouWebhookNotification(JSON.stringify(event))).toMatchObject({
+      providerPaymentId: 'payment-id',
+      paymentChargeId: null,
+    });
   });
 
   it('has no charge id when charge.paid comes without one', () => {

@@ -28,6 +28,18 @@ export const OPAPINGOU_CHARGE_PAID_EVENT = 'charge.paid';
 
 export const OPAPINGOU_PING_EVENT = 'ping';
 
+/**
+ * A payment that was received and then reversed: refunded by the receiver or
+ * charged back by the payer. The `object` is a Payment, whose `charge` names the
+ * charge it paid (null for payments that did not come from a charge).
+ */
+export const OPAPINGOU_PAYMENT_REVERSAL_EVENTS = ['payment.refunded', 'payment.charged_back'] as const;
+
+export type TOpapingouPaymentReversalEvent = (typeof OPAPINGOU_PAYMENT_REVERSAL_EVENTS)[number];
+
+export const isOpapingouPaymentReversalEvent = (eventType: string): eventType is TOpapingouPaymentReversalEvent =>
+  (OPAPINGOU_PAYMENT_REVERSAL_EVENTS as readonly string[]).includes(eventType);
+
 const SHA256_HEX_REGEX = /^[0-9a-f]{64}$/i;
 
 const TIMESTAMP_REGEX = /^\d{1,12}$/;
@@ -54,6 +66,12 @@ const ZOpapingouChargeObjectSchema = z.object({
   id: z.string().min(1).max(MAX_IDENTIFIER_LENGTH),
 });
 
+const ZOpapingouPaymentObjectSchema = z.object({
+  id: z.string().min(1).max(MAX_IDENTIFIER_LENGTH),
+  amountCents: z.number().int().optional(),
+  charge: ZOpapingouChargeObjectSchema.nullable().optional(),
+});
+
 /**
  * An authentic webhook delivery, in provider-neutral terms.
  */
@@ -65,6 +83,15 @@ export type TProviderWebhookNotification = {
 
   /** The provider's charge id, for `charge.*` events. */
   providerChargeId: string | null;
+
+  /** The provider's payment id, for `payment.*` events. */
+  providerPaymentId: string | null;
+
+  /** For `payment.*` events, the provider's id of the charge the payment paid, if any. */
+  paymentChargeId: string | null;
+
+  /** The amount of the payment, for `payment.*` events. */
+  paymentAmountCents: number | null;
 };
 
 const hmac = (secret: string, timestamp: number, rawBody: string) =>
@@ -163,11 +190,20 @@ export const parseOpapingouWebhookNotification = (rawBody: string): TProviderWeb
 
   const charge = isChargeEvent ? ZOpapingouChargeObjectSchema.safeParse(event.data?.object) : null;
 
+  const isPaymentEvent = event.type.startsWith('payment.') && event.data?.type === 'payment';
+
+  const payment = isPaymentEvent ? ZOpapingouPaymentObjectSchema.safeParse(event.data?.object) : null;
+
+  const paymentData = payment?.success ? payment.data : null;
+
   return {
     eventId: event.id,
     eventType: event.type,
     testMode: event.testMode ?? false,
     providerChargeId: charge?.success ? charge.data.id : null,
+    providerPaymentId: paymentData?.id ?? null,
+    paymentChargeId: paymentData?.charge?.id ?? null,
+    paymentAmountCents: paymentData?.amountCents ?? null,
   };
 };
 

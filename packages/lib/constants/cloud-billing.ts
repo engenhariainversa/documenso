@@ -42,6 +42,13 @@ export const OPAPINGOU_API_KEY = () => readOptionalEnv('NEXT_PRIVATE_OPAPINGOU_A
 
 export const OPAPINGOU_WEBHOOK_SECRET = () => readOptionalEnv('NEXT_PRIVATE_OPAPINGOU_WEBHOOK_SECRET');
 
+/**
+ * Where refunds and chargebacks of Docverse Cloud payments are reported. Falls back
+ * to the address that already gets the waitlist notices.
+ */
+export const CLOUD_BILLING_ALERT_EMAIL = () =>
+  readOptionalEnv('NEXT_PRIVATE_CLOUD_BILLING_ALERT_EMAIL') ?? readOptionalEnv('NEXT_PRIVATE_WAITLIST_NOTIFY_EMAIL');
+
 export const IS_CLOUD_BILLING_PROVIDER_CONFIGURED = () =>
   OPAPINGOU_API_KEY() !== undefined && OPAPINGOU_WEBHOOK_SECRET() !== undefined;
 

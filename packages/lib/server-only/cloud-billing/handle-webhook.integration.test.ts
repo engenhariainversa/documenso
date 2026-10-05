@@ -14,6 +14,7 @@ const { hasTestDatabase } = vi.hoisted(() => {
 import { prisma } from '@documenso/prisma';
 import { CloudSubscriptionChargeStatus } from '@prisma/client';
 
+import { jobsClient } from '../../jobs/client';
 import { createCloudSubscriptionCheckout } from './create-checkout';
 import { CLOUD_BILLING_CONFIRMATION_WINDOW_DAYS, handleOpapingouWebhook } from './handle-webhook';
 import {
@@ -437,5 +438,93 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
     await notify(charge);
 
     expect(await prisma.cloudSubscription.count({ where: { organisationId: other.organisation.id } })).toBe(0);
+  });
+
+  describe('refunds and chargebacks', () => {
+    const notifyReversal = async (type: string, paymentChargeId: string | null, delivery = 'reversal_1') =>
+      await notify(null, {
+        delivery,
+        type,
+        resourceType: 'payment',
+        object: {
+          id: `payment:${delivery}`,
+          amountCents: 9990,
+          status: type === 'payment.refunded' ? 'REFUNDED' : 'CHARGED_BACK',
+          charge: paymentChargeId ? { id: paymentChargeId, kind: 'PIX_QR', description: 'Docverse' } : null,
+        },
+      });
+
+    const payAndNotify = async () => {
+      const charge = await startCheckout();
+
+      payAtProvider(charge);
+
+      await notify(charge);
+
+      return charge;
+    };
+
+    let triggerJob: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      triggerJob = vi.spyOn(jobsClient, 'triggerJob').mockResolvedValue(undefined as never);
+    });
+
+    afterEach(() => {
+      triggerJob.mockRestore();
+    });
+
+    it.each([
+      'payment.refunded',
+      'payment.charged_back',
+    ])('records %s of one of our charges and alerts the team, without touching the plan', async (type) => {
+      const charge = await payAndNotify();
+      const before = await findSubscription();
+
+      const result = await notifyReversal(type, charge.providerChargeId);
+
+      expect(result).toMatchObject({ status: 200, outcome: 'ALERTED', chargeId: charge.id });
+      expect(triggerJob).toHaveBeenCalledTimes(1);
+      expect(triggerJob).toHaveBeenCalledWith({
+        name: 'send.cloud-billing.payment-reversal.alert',
+        payload: {
+          eventId: result.eventId,
+          eventType: type,
+          chargeId: charge.id,
+          providerPaymentId: 'payment:reversal_1',
+          paymentAmountCents: 9990,
+        },
+      });
+
+      expect(await prisma.cloudBillingWebhookEvent.findMany({ where: { eventId: result.eventId } })).toMatchObject([
+        { eventType: type, outcome: 'ALERTED', chargeId: charge.id },
+      ]);
+
+      expect(await findSubscription()).toEqual(before);
+      expect((await findCharge(charge.id)).status).toBe(CloudSubscriptionChargeStatus.PAID);
+    });
+
+    it('alerts once when the same event is delivered again', async () => {
+      const charge = await payAndNotify();
+
+      await notifyReversal('payment.refunded', charge.providerChargeId);
+      await notifyReversal('payment.refunded', charge.providerChargeId);
+
+      expect(triggerJob).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores the refund of a payment that is not ours', async () => {
+      const result = await notifyReversal('payment.refunded', 'charge-of-another-system');
+
+      expect(result.outcome).toBe('IGNORED');
+      expect(triggerJob).not.toHaveBeenCalled();
+    });
+
+    it('ignores the refund of a payment that did not come from a charge', async () => {
+      const result = await notifyReversal('payment.charged_back', null);
+
+      expect(result.outcome).toBe('IGNORED');
+      expect(triggerJob).not.toHaveBeenCalled();
+    });
   });
 });

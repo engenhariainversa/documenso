@@ -1,5 +1,8 @@
 import { router } from '../trpc';
 import { adminSearchRoute } from './admin-search';
+import { createCloudBillingCouponRoute } from './cloud-billing-coupon/create-cloud-billing-coupon';
+import { findCloudBillingCouponsRoute } from './cloud-billing-coupon/find-cloud-billing-coupons';
+import { updateCloudBillingCouponRoute } from './cloud-billing-coupon/update-cloud-billing-coupon';
 import { createAdminOrganisationRoute } from './create-admin-organisation';
 import { createSubscriptionClaimRoute } from './create-subscription-claim';
 import { createUserRoute } from './create-user';
@@ -116,6 +119,11 @@ export const adminRouter = router({
   },
   teamMember: {
     delete: deleteAdminTeamMemberRoute,
+  },
+  cloudBillingCoupon: {
+    find: findCloudBillingCouponsRoute,
+    create: createCloudBillingCouponRoute,
+    update: updateCloudBillingCouponRoute,
   },
   search: adminSearchRoute,
   updateSiteSetting: updateSiteSettingRoute,

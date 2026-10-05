@@ -384,11 +384,51 @@ model CloudSubscriptionCharge {
 
   createdByUserId Int?
 
+  /// The coupon applied at checkout. `amountCents` is already the discounted value.
+  couponId      String?
+  coupon        CloudBillingCoupon? @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  /// How much the coupon took off the list price.
+  discountCents Int                 @default(0)
+
   organisationId String
   organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerChargeId])
   @@index([organisationId, status])
+  @@index([couponId, status])
+}
+
+enum CloudBillingCouponDiscountType {
+  PERCENT
+  AMOUNT_OFF
+}
+
+/// A discount code for the Docverse Cloud checkout, managed by admins.
+///
+/// A coupon is never deleted once used, only deactivated: its charges keep a
+/// reference to it. A redemption is a charge with the coupon that is paid or still
+/// pending; an expired one frees its place.
+model CloudBillingCoupon {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Upper case, letters, digits, "-" and "_".
+  code          String                         @unique
+  description   String                         @default("")
+  discountType  CloudBillingCouponDiscountType
+  /// Percent (1-100) for PERCENT, cents for AMOUNT_OFF.
+  discountValue Int
+
+  isActive       Boolean   @default(true)
+  validFrom      DateTime?
+  validUntil     DateTime?
+  /// Null means no limit.
+  maxRedemptions Int?
+
+  createdByUserId Int?
+
+  charges CloudSubscriptionCharge[]
 }
 
 /// Payment provider webhook events already handled, used for idempotency.

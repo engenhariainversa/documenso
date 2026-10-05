@@ -2011,7 +2011,7 @@ msgstr "Versão do App"
 
 #: apps/remix/app/components/general/analytics/analytics-range-picker.tsx
 msgid "Apply"
-msgstr ""
+msgstr "Aplicar"
 
 #: apps/remix/app/components/general/organisations/organisation-quota-banner.tsx
 msgid "Approaching fair use limit"
@@ -14968,3 +14968,151 @@ msgstr "O formulário da lista de espera não está aparecendo na landing page. 
 #: apps/remix/app/routes/_authenticated+/admin+/waitlist._index.tsx
 msgid "Waitlist"
 msgstr "Lista de espera"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "{0} paid, {1} pending"
+msgstr "{0} pagos, {1} pendentes"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "A coupon with this code already exists."
+msgstr "Já existe um cupom com este código."
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Amount off (R$)"
+msgstr "Valor de desconto (R$)"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Amount off, e.g. 98,90"
+msgstr "Desconto em reais, ex.: 98,90"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Cloud billing is disabled on this instance (NEXT_PUBLIC_CLOUD_BILLING_ENABLED). Coupons can be prepared, but nobody can use them yet."
+msgstr "A cobrança cloud está desligada nesta instância (NEXT_PUBLIC_CLOUD_BILLING_ENABLED). Os cupons podem ser preparados, mas ninguém consegue usá-los ainda."
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Code"
+msgstr "Código"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Coupon (optional)"
+msgstr "Cupom (opcional)"
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "Coupon {0} applied: {discount} off."
+msgstr "Cupom {0} aplicado: {discount} de desconto."
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Coupon created"
+msgstr "Cupom criado"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Coupon updated"
+msgstr "Cupom atualizado"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Coupons"
+msgstr "Cupons"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Create coupon"
+msgstr "Criar cupom"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Discount"
+msgstr "Desconto"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Discount codes for the Docverse Cloud plan. The discounted amount is what the Pix charge asks for. A coupon cannot be deleted or have its discount changed: deactivate it and create another one."
+msgstr "Códigos de desconto do plano Docverse Cloud. O valor com desconto é o que a cobrança Pix pede. Um cupom não pode ser excluído nem ter o desconto alterado: desative-o e crie outro."
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Discount type"
+msgstr "Tipo de desconto"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Edit coupon {0}"
+msgstr "Editar cupom {0}"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Final price"
+msgstr "Preço final"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Final price: {finalPrice}"
+msgstr "Preço final: {finalPrice}"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Internal note (optional)"
+msgstr "Nota interna (opcional)"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "New coupon"
+msgstr "Novo cupom"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "No coupons yet."
+msgstr "Nenhum cupom ainda."
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Percentage (1-99)"
+msgstr "Percentual (1-99)"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Percentage off (%)"
+msgstr "Percentual de desconto (%)"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "The code and the discount cannot change."
+msgstr "O código e o desconto não podem mudar."
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "The discount must leave at least R$ 0,01 to pay."
+msgstr "O desconto precisa deixar pelo menos R$ 0,01 a pagar."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "This coupon does not exist."
+msgstr "Este cupom não existe."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "This coupon has already been used up."
+msgstr "Este cupom já se esgotou."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "This coupon has expired."
+msgstr "Este cupom expirou."
+
+#: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.billing.tsx
+msgid "This coupon is not valid yet."
+msgstr "Este cupom ainda não é válido."
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Times are shown in your time zone."
+msgstr "Os horários estão no seu fuso horário."
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Unable to create the coupon"
+msgstr "Não foi possível criar o cupom"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Unable to update the coupon"
+msgstr "Não foi possível atualizar o cupom"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Usage limit (empty for no limit)"
+msgstr "Limite de usos (vazio para ilimitado)"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Uses"
+msgstr "Usos"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Valid from (optional)"
+msgstr "Válido a partir de (opcional)"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Valid until (optional)"
+msgstr "Válido até (opcional)"
+
+#: apps/remix/app/routes/_authenticated+/admin+/coupons._index.tsx
+msgid "Validity"
+msgstr "Validade"
