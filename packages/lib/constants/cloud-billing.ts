@@ -32,10 +32,14 @@ export const OPAPINGOU_DEFAULT_API_URL = 'https://api.opapingou.com.br/v1';
 
 export const IS_CLOUD_BILLING_ENABLED = () => env('NEXT_PUBLIC_CLOUD_BILLING_ENABLED') === 'true';
 
+/**
+ * The REST API lives under `/v1`. A URL configured without it (only the host) gets it
+ * appended, so the charge routes never land on `/charges` and answer 404.
+ */
 export const OPAPINGOU_API_URL = () => {
-  const url = readOptionalEnv('NEXT_PRIVATE_OPAPINGOU_API_URL') ?? OPAPINGOU_DEFAULT_API_URL;
+  const url = (readOptionalEnv('NEXT_PRIVATE_OPAPINGOU_API_URL') ?? OPAPINGOU_DEFAULT_API_URL).replace(/\/+$/, '');
 
-  return url.replace(/\/+$/, '');
+  return url.endsWith('/v1') ? url : `${url}/v1`;
 };
 
 export const OPAPINGOU_API_KEY = () => readOptionalEnv('NEXT_PRIVATE_OPAPINGOU_API_KEY');

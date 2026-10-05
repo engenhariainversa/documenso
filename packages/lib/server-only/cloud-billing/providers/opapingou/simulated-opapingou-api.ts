@@ -125,10 +125,11 @@ export const startSimulatedOpapingouApi = async ({
       });
     },
     /**
-     * A delivery signed as the provider does (`Opa-Signature`, see `opapingou-webhook.ts`).
+     * A delivery signed as the provider does (`Opa-Signature`, see `opapingou-webhook.ts`),
+     * with `Opa-Event-Id` and `Opa-Event-Type` taken from the event.
      * `timestamp` is in Unix seconds and defaults to the current time.
      */
-    buildSignedWebhook: (event: unknown, { timestamp }: { timestamp?: number } = {}) => {
+    buildSignedWebhook: (event: Record<string, unknown>, { timestamp }: { timestamp?: number } = {}) => {
       const rawBody = JSON.stringify(event);
 
       const signature = signOpapingouWebhookBody({
@@ -137,10 +138,19 @@ export const startSimulatedOpapingouApi = async ({
         timestamp: timestamp ?? Math.floor(Date.now() / 1000),
       });
 
+      const eventId = typeof event.id === 'string' ? event.id : undefined;
+      const eventType = typeof event.type === 'string' ? event.type : undefined;
+
       return {
         rawBody,
         signature,
-        headers: { 'opa-signature': signature },
+        eventId,
+        eventType,
+        headers: {
+          'opa-signature': signature,
+          ...(eventId ? { 'opa-event-id': eventId } : {}),
+          ...(eventType ? { 'opa-event-type': eventType } : {}),
+        },
       };
     },
     close: async () => {

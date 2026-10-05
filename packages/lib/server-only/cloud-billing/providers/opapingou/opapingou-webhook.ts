@@ -14,13 +14,19 @@ import { z } from 'zod';
  * - Reject when `|now - t|` exceeds 300 seconds; compare in constant time
  * - Body `{ id, type, occurredAt, testMode, data: { type, object } }`, where `object` is
  *   the resource as the REST API returns it (a `Charge` for `charge.*` events)
- * - Delivered at least once: deduplicate by `id` (also sent as `Opa-Event-Id`)
+ * - Delivered at least once: deduplicate by `id`, also sent as the `Opa-Event-Id`
+ *   header, next to `Opa-Event-Type` with the body's `type`. The headers are not
+ *   signed, so the body is what counts; a header that disagrees with it is refused
  * - `ping` is the test event of an endpoint, signed like the others
  *
  * The body is authentic once the signature checks, but a payment is still only
  * accepted after reading the charge back from the API (see `handle-webhook.ts`).
  */
 export const OPAPINGOU_SIGNATURE_HEADER = 'opa-signature';
+
+export const OPAPINGOU_EVENT_ID_HEADER = 'opa-event-id';
+
+export const OPAPINGOU_EVENT_TYPE_HEADER = 'opa-event-type';
 
 export const OPAPINGOU_SIGNATURE_TOLERANCE_SECONDS = 300;
 
