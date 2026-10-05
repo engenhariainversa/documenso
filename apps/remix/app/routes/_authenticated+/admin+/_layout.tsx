@@ -13,6 +13,7 @@ import {
   LineChartIcon,
   MailIcon,
   Settings,
+  TicketPercentIcon,
   Trophy,
   Users,
   Wallet2,
@@ -106,6 +107,17 @@ export default function AdminLayout() {
             <Link to="/admin/waitlist">
               <ClipboardListIcon className="mr-2 h-5 w-5" />
               <Trans>Waitlist</Trans>
+            </Link>
+          </Button>
+
+          <Button
+            variant="ghost"
+            className={cn('justify-start md:w-full', pathname?.startsWith('/admin/coupons') && 'bg-secondary')}
+            asChild
+          >
+            <Link to="/admin/coupons">
+              <TicketPercentIcon className="mr-2 h-5 w-5" />
+              <Trans>Coupons</Trans>
             </Link>
           </Button>
 

@@ -12,7 +12,12 @@ import {
   isSendingAllowedForState,
   type TCloudSubscriptionState,
 } from '../../universal/cloud-billing/subscription-state';
-import { getCheckoutReuseCutoff, mapChargeToCheckout, type TCloudCheckoutCharge } from './create-checkout';
+import {
+  CHARGE_COUPON_INCLUDE,
+  getCheckoutReuseCutoff,
+  mapChargeToCheckout,
+  type TCloudCheckoutCharge,
+} from './create-checkout';
 
 export type TCloudSubscription = {
   isBillingEnabled: boolean;
@@ -86,6 +91,7 @@ export const getCloudSubscription = async ({
       orderBy: {
         createdAt: 'desc',
       },
+      include: CHARGE_COUPON_INCLUDE,
     }),
   ]);
 

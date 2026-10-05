@@ -153,6 +153,7 @@ Referência: `docs/superpowers/specs/2026-10-03-api-rest-keys-webhooks-design.md
 | `NEXT_PRIVATE_OPAPINGOU_API_URL` | URL base da API | `https://api.opapingou.com.br/v1` |
 | `NEXT_PRIVATE_OPAPINGOU_API_KEY` | chave da API | vazio |
 | `NEXT_PRIVATE_OPAPINGOU_WEBHOOK_SECRET` | segredo para verificar o webhook | vazio |
+| `NEXT_PRIVATE_CLOUD_BILLING_ALERT_EMAIL` | quem recebe os alertas de estorno e chargeback | `NEXT_PRIVATE_WAITLIST_NOTIFY_EMAIL` |
 
 `IS_CLOUD_BILLING_ENABLED()` lê a primeira. Por ser `NEXT_PUBLIC_*`, ela chega ao navegador pelo `createPublicEnv()` já existente.
 
@@ -359,6 +360,29 @@ O caminho `/settings/billing` é o mesmo que os links residuais do upstream já 
 
 Em PR separado (`docverse/landing-pricing`), independente deste. A landing page (DOC-29) ainda não existe na `main` e está sendo feita em outra branch, então a entrega é um componente isolado, pronto para ser encaixado.
 
+### 10. Cupons de desconto (decisão de 2026-10-05)
+
+Caso de uso imediato: a primeira cobrança real em produção sair por R$ 1,00 no plano de verdade.
+
+- **Modelo `CloudBillingCoupon`:** `code` único (maiúsculas, `[A-Z0-9_-]{3,32}`, digitado sem diferença de caixa), `discountType` (`PERCENT` 1–99 ou `AMOUNT_OFF` em centavos), `discountValue`, `isActive`, `validFrom`/`validUntil` opcionais e `maxRedemptions` opcional (vazio é ilimitado). O desconto nunca deixa menos de R$ 0,01 (mínimo do Opa Pingou, `MIN_CHARGE_CENTS = 1`) nem torna o plano grátis.
+- **Cobrança:** `CloudSubscriptionCharge` ganha `couponId` e `discountCents`. `amountCents` já é o valor com desconto, e é esse que vai ao Opa Pingou em `amountCents` e que a confirmação compara com a API.
+- **Uso:** conta como uso uma cobrança com o cupom paga, ou pendente e ainda pagável (Pix dentro da validade e da janela de 24 h). Uma pendente vencida libera o lugar mesmo antes de ser marcada `EXPIRED`; se for paga mesmo assim, o pagamento é honrado e o limite pode ser ultrapassado em uma unidade.
+- **Concorrência:** o cupom é conferido dentro da transação do checkout, com trava por organização e depois por cupom (`pg_advisory_xact_lock`), então duas organizações não levam o último uso.
+- **Checkout:** campo opcional "Cupom" na tela de plano. Com código diferente do da cobrança pendente (ou sem cupom antes), a pendente é trocada; sem código, a pendente é reaproveitada como está; "Gerar novo código" mantém o cupom da cobrança substituída. Erros: `COUPON_NOT_FOUND`, `COUPON_INACTIVE`, `COUPON_NOT_STARTED`, `COUPON_EXPIRED`, `COUPON_EXHAUSTED` (400), e a cobrança pendente fica intacta.
+- **Admin:** `/admin/coupons` cria cupons (com prévia do preço final), lista usos pagos e pendentes, ativa/desativa e edita validade, limite e nota. Código e desconto não mudam depois de criados e cupons não são excluídos: desativa-se e cria-se outro.
+
+### 11. Estorno e chargeback (decisão de 2026-10-05)
+
+- `payment.refunded` e `payment.charged_back` chegam com `data.type = "payment"` e o `Payment` em `data.object`, que traz a cobrança em `charge.id` (nulo para pagamentos que não vieram de cobrança). Conferido em `apps/api/src/outbound-webhooks/webhook-resources.ts` e `apps/api/src/rest/v1/resources/payment.resource.ts` do Opa Pingou (`origin/main`).
+- Se `charge.id` é de uma cobrança nossa: o evento é gravado com resultado `ALERTED` e o job `send.cloud-billing.payment-reversal.alert` manda um e-mail em pt-BR para `NEXT_PRIVATE_CLOUD_BILLING_ALERT_EMAIL` (ou, sem ela, `NEXT_PRIVATE_WAITLIST_NOTIFY_EMAIL`), com organização, valor, ids no Opa Pingou, período comprado e cupom. Um alerta por evento: a reentrega não repete o e-mail.
+- Pagamento que não é nosso, ou sem cobrança: `IGNORED`.
+- **A assinatura não muda por enquanto.** Depois, o estorno e o chargeback vão cancelar a assinatura automaticamente (encerrar o período comprado por aquele pagamento); até lá, a equipe decide manualmente a partir do e-mail.
+- O endpoint do webhook no Opa Pingou precisa estar inscrito em `charge.paid`, `payment.refunded` e `payment.charged_back`.
+
+### 12. Primeiro teste em produção (decisão de 2026-10-05)
+
+O teste ponta a ponta é feito com o Docverse em produção contra a **produção** do Opa Pingou, não o staging: `NEXT_PRIVATE_OPAPINGOU_API_URL=https://api.opapingou.com.br/v1` (também o padrão quando a variável fica vazia), chave de produção (`opk_live_…`) e endpoint de webhook cadastrado na conta de produção. A primeira cobrança usa um cupom de uso único que leva o plano a R$ 1,00 (`AMOUNT_OFF` de 9890 centavos, limite 1).
+
 ## Tratamento de erros
 
 | Situação | Comportamento |
@@ -386,10 +410,11 @@ Nenhum teste chama a API real.
 2. **O Opa Pingou publicar `POST /v1/charges` e `GET /v1/charges/{id}`.** Chave, erros e webhooks já estão no ar (2026-10-05); as rotas de cobrança ainda respondem 404 no staging.
 3. Conferir quando as rotas de cobrança saírem: `Idempotency-Key` (obrigatório? retenção?), URL base definitiva e se os campos de `Charge` mudaram.
 4. Recorrência: a documentação não tem assinatura nem Pix Automático. Decidir se a renovação manual mensal por Pix é aceitável ou se é preciso pedir recorrência ao Opa Pingou ou usar outro provedor.
-5. Criar a conta, conectar um banco e gerar uma chave de API com `charges:write` e `charges:read` (mais `webhooks:write` se o endpoint for cadastrado pela API), e um endpoint de webhook inscrito só em `charge.paid` apontando para `/api/billing/opapingou/webhook`, com o segredo `whsec_…` guardado em `NEXT_PRIVATE_OPAPINGOU_WEBHOOK_SECRET`.
+5. Criar a conta, conectar um banco e gerar uma chave de API com `charges:write` e `charges:read` (mais `webhooks:write` se o endpoint for cadastrado pela API), e um endpoint de webhook inscrito em `charge.paid`, `payment.refunded` e `payment.charged_back` apontando para `/api/billing/opapingou/webhook`, com o segredo `whsec_…` guardado em `NEXT_PRIVATE_OPAPINGOU_WEBHOOK_SECRET`.
 6. Testar ponta a ponta fora de produção: sandbox, se o Opa Pingou criar um, ou uma conta `testMode` com `POST /v1/charges/{id}/simulate-payment`; depois uma cobrança real de valor baixo.
 7. Definir as variáveis de ambiente em produção e aplicar a migração.
 8. Decidir o que acontece com as organizações que já existem na instância cloud quando a cobrança for ligada.
 9. Criar alerta para pagamento rejeitado por valor divergente: hoje ele só aparece no log e na tabela de eventos.
+9a. Cancelar automaticamente a assinatura em `payment.refunded` e `payment.charged_back` (hoje só registra e alerta por e-mail, seção 11).
 10. Repassar as quatro variáveis novas ao ambiente de produção (compose e segredos do deploy).
 11. Opcional: um botão "já paguei" ou uma consulta ao abrir a tela de plano que chame `confirmCloudSubscriptionCharges`, para o pagamento ser confirmado mesmo se o webhook atrasar.

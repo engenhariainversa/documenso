@@ -1,5 +1,6 @@
 import { JobClient } from './client/client';
 import { SEND_ADMIN_USER_CREATED_EMAIL_JOB_DEFINITION } from './definitions/emails/send-admin-user-created-email';
+import { SEND_CLOUD_BILLING_PAYMENT_REVERSAL_ALERT_JOB_DEFINITION } from './definitions/emails/send-cloud-billing-payment-reversal-alert';
 import { SEND_CONFIRMATION_EMAIL_JOB_DEFINITION } from './definitions/emails/send-confirmation-email';
 import { SEND_DOCUMENT_CANCELLED_EMAILS_JOB_DEFINITION } from './definitions/emails/send-document-cancelled-emails';
 import { SEND_DOCUMENT_COMPLETED_EMAILS_JOB_DEFINITION } from './definitions/emails/send-document-completed-emails';
@@ -39,6 +40,7 @@ export const jobsClient = new JobClient([
   SEND_ADMIN_USER_CREATED_EMAIL_JOB_DEFINITION,
   SEND_WAITLIST_JOINED_EMAILS_JOB_DEFINITION,
   SEND_WAITLIST_INVITE_EMAIL_JOB_DEFINITION,
+  SEND_CLOUD_BILLING_PAYMENT_REVERSAL_ALERT_JOB_DEFINITION,
   SEND_SIGNING_EMAIL_JOB_DEFINITION,
   SEND_CONFIRMATION_EMAIL_JOB_DEFINITION,
   SEND_ORGANISATION_MEMBER_JOINED_EMAIL_JOB_DEFINITION,

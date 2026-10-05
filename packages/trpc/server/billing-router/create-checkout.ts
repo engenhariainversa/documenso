@@ -8,17 +8,18 @@ export const createCheckoutRoute = authenticatedProcedure
   .input(ZCreateCheckoutRequestSchema)
   .output(ZCreateCheckoutResponseSchema)
   .mutation(async ({ input, ctx }) => {
-    const { organisationId, isReplacement } = input;
+    const { organisationId, isReplacement, couponCode } = input;
     const userId = ctx.user.id;
 
     ctx.logger.info({
       input: {
         organisationId,
         isReplacement,
+        couponCode,
       },
     });
 
     await assertUserCanManageOrganisationBilling({ organisationId, userId });
 
-    return await createCloudSubscriptionCheckout({ organisationId, userId, isReplacement });
+    return await createCloudSubscriptionCheckout({ organisationId, userId, isReplacement, couponCode });
   });

@@ -8,9 +8,11 @@ import {
   IS_CLOUD_BILLING_ENABLED,
   OPAPINGOU_WEBHOOK_SECRET,
 } from '../../constants/cloud-billing';
+import { jobsClient } from '../../jobs/client';
 import { computeNextPeriod } from '../../universal/cloud-billing/subscription-state';
 import { getOpapingouCharge, type TProviderChargeState } from './providers/opapingou/opapingou-client';
 import {
+  isOpapingouPaymentReversalEvent,
   OPAPINGOU_CHARGE_PAID_EVENT,
   parseOpapingouWebhookNotification,
   verifyOpapingouWebhookSignature,
@@ -42,10 +44,17 @@ export type TChargeConfirmationOutcome =
   | 'UNKNOWN_TO_PROVIDER';
 
 /**
- * What happened to an authentic, well formed notification. `IGNORED` is any event
- * other than `charge.paid`, including the endpoint test (`ping`).
+ * What happened to an authentic, well formed notification. `ALERTED` is a refund or
+ * chargeback of a payment of one of our charges: the team is told by email.
+ * `IGNORED` is any other event, including the endpoint test (`ping`) and refunds
+ * of payments that are not ours.
  */
-export type TWebhookEventOutcome = 'PROCESSED' | 'NOTHING_TO_CONFIRM' | 'REJECTED_AMOUNT_MISMATCH' | 'IGNORED';
+export type TWebhookEventOutcome =
+  | 'PROCESSED'
+  | 'NOTHING_TO_CONFIRM'
+  | 'REJECTED_AMOUNT_MISMATCH'
+  | 'ALERTED'
+  | 'IGNORED';
 
 /**
  * Why a request was refused before being treated as a notification.
@@ -77,7 +86,11 @@ export type HandleOpapingouWebhookOptions = {
  *
  * Nothing is read from or written to the database before the signature is verified.
  *
- * Only `charge.paid` does something: the charge it names is read back from the API,
+ * `payment.refunded` and `payment.charged_back` of a payment of one of our charges
+ * are recorded and alert the team by email, once per event. They do not touch the
+ * subscription yet: cancelling it automatically is planned (see the billing spec).
+ *
+ * Only `charge.paid` changes the subscription: the charge it names is read back from the API,
  * and only if it is one of our unpaid charges, the API reports it paid and the amount
  * matches does it activate the subscription. The provider account can also hold
  * charges of other systems; those are not ours and change nothing. Every other event
@@ -133,15 +146,42 @@ export const handleOpapingouWebhook = async ({
   const processed = confirmations.find((confirmation) => confirmation.outcome === 'PROCESSED');
   const rejected = confirmations.find((confirmation) => confirmation.outcome === 'REJECTED_AMOUNT_MISMATCH');
 
-  const outcome: TWebhookEventOutcome = !isChargePaid
-    ? 'IGNORED'
-    : processed
-      ? 'PROCESSED'
-      : rejected
-        ? 'REJECTED_AMOUNT_MISMATCH'
-        : 'NOTHING_TO_CONFIRM';
+  const reversedCharge =
+    isOpapingouPaymentReversalEvent(notification.eventType) && notification.paymentChargeId
+      ? await prisma.cloudSubscriptionCharge.findUnique({
+          where: {
+            provider_providerChargeId: {
+              provider: CLOUD_BILLING_PROVIDER,
+              providerChargeId: notification.paymentChargeId,
+            },
+          },
+          select: {
+            id: true,
+          },
+        })
+      : null;
 
-  const chargeId = (processed ?? rejected)?.chargeId;
+  const outcome: TWebhookEventOutcome = reversedCharge
+    ? 'ALERTED'
+    : !isChargePaid
+      ? 'IGNORED'
+      : processed
+        ? 'PROCESSED'
+        : rejected
+          ? 'REJECTED_AMOUNT_MISMATCH'
+          : 'NOTHING_TO_CONFIRM';
+
+  const chargeId = (processed ?? rejected)?.chargeId ?? reversedCharge?.id;
+
+  if (reversedCharge) {
+    await alertPaymentReversalOnce({
+      eventId: notification.eventId,
+      eventType: notification.eventType,
+      chargeId: reversedCharge.id,
+      providerPaymentId: notification.providerPaymentId,
+      paymentAmountCents: notification.paymentAmountCents,
+    });
+  }
 
   await prisma.cloudBillingWebhookEvent
     .create({
@@ -166,6 +206,42 @@ export const handleOpapingouWebhook = async ({
     eventId: notification.eventId,
     ...(chargeId ? { chargeId } : {}),
   };
+};
+
+type AlertPaymentReversalOnceOptions = {
+  eventId: string;
+  eventType: string;
+  chargeId: string;
+  providerPaymentId: string | null;
+  paymentAmountCents: number | null;
+};
+
+/**
+ * Queues the alert unless the event was already recorded, i.e. already alerted.
+ * The alert is queued before the event is recorded: if recording fails, the
+ * provider delivers again and the team may get the alert twice, never zero times.
+ */
+const alertPaymentReversalOnce = async (options: AlertPaymentReversalOnceOptions) => {
+  const recorded = await prisma.cloudBillingWebhookEvent.findUnique({
+    where: {
+      provider_eventId: {
+        provider: CLOUD_BILLING_PROVIDER,
+        eventId: options.eventId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (recorded) {
+    return;
+  }
+
+  await jobsClient.triggerJob({
+    name: 'send.cloud-billing.payment-reversal.alert',
+    payload: options,
+  });
 };
 
 export type TChargeConfirmation = {

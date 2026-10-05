@@ -12,12 +12,15 @@ import type { TGetSubscriptionResponse } from '@documenso/trpc/server/billing-ro
 import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/alert';
 import { Badge } from '@documenso/ui/primitives/badge';
 import { Button } from '@documenso/ui/primitives/button';
+import { Input } from '@documenso/ui/primitives/input';
+import { Label } from '@documenso/ui/primitives/label';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import type { MessageDescriptor } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { CheckIcon, CopyIcon, ExternalLinkIcon, LoaderIcon } from 'lucide-react';
+import { useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { GenericErrorLayout } from '~/components/general/generic-error-layout';
@@ -55,15 +58,33 @@ export default function OrganisationSettingsBillingPage() {
 
   const { mutateAsync: createCheckout, isPending: isCreatingCheckout } = trpc.billing.createCheckout.useMutation();
 
-  const onCheckoutClick = async ({ isReplacement }: { isReplacement: boolean }) => {
+  const [couponCode, setCouponCode] = useState('');
+
+  const onCheckoutClick = async ({
+    isReplacement,
+    withCoupon = true,
+  }: {
+    isReplacement: boolean;
+    withCoupon?: boolean;
+  }) => {
     try {
-      await createCheckout({ organisationId: organisation.id, isReplacement });
+      await createCheckout({
+        organisationId: organisation.id,
+        isReplacement,
+        couponCode: withCoupon && couponCode.trim() ? couponCode.trim() : undefined,
+      });
+
+      setCouponCode('');
     } catch (err) {
       const error = AppError.parseError(err);
 
       const description = match(error.code)
         .with(AppErrorCode.NOT_SETUP, () => msg`Payments are not available yet. Please try again later.`)
         .with(AppErrorCode.ALREADY_EXISTS, () => msg`A payment is already being prepared. Please wait a moment.`)
+        .with('COUPON_NOT_FOUND', 'COUPON_INACTIVE', () => msg`This coupon does not exist.`)
+        .with('COUPON_NOT_STARTED', () => msg`This coupon is not valid yet.`)
+        .with('COUPON_EXPIRED', () => msg`This coupon has expired.`)
+        .with('COUPON_EXHAUSTED', () => msg`This coupon has already been used up.`)
         .otherwise(() => msg`We were unable to start the payment at this time. Please try again later.`);
 
       toast({
@@ -166,6 +187,36 @@ export default function OrganisationSettingsBillingPage() {
             />
           </p>
 
+          {(!pendingCharge || !pendingCharge.couponCode) && isProviderConfigured && (
+            <div className="mt-6 max-w-xs space-y-2">
+              <Label htmlFor="cloud-billing-coupon">
+                <Trans>Coupon (optional)</Trans>
+              </Label>
+
+              <div className="flex gap-2">
+                <Input
+                  id="cloud-billing-coupon"
+                  value={couponCode}
+                  maxLength={32}
+                  autoComplete="off"
+                  className="uppercase"
+                  onChange={(event) => setCouponCode(event.target.value)}
+                />
+
+                {pendingCharge && (
+                  <Button
+                    variant="secondary"
+                    loading={isCreatingCheckout}
+                    disabled={!couponCode.trim()}
+                    onClick={() => void onCheckoutClick({ isReplacement: false })}
+                  >
+                    <Trans>Apply</Trans>
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {!pendingCharge && (
             <Button
               className="mt-6"
@@ -190,7 +241,7 @@ export default function OrganisationSettingsBillingPage() {
             isChecking={isRefetchingSubscription}
             isReplacing={isCreatingCheckout}
             onPaidClick={() => void onPaidClick()}
-            onReplaceClick={() => void onCheckoutClick({ isReplacement: true })}
+            onReplaceClick={() => void onCheckoutClick({ isReplacement: true, withCoupon: false })}
           />
         )}
 
@@ -260,6 +311,8 @@ const PendingChargeCard = ({
 
   const amount = formatCentsAsCurrency({ cents: charge.amountCents, currency: charge.currency });
 
+  const discount = formatCentsAsCurrency({ cents: charge.discountCents, currency: charge.currency });
+
   const expiresAt = charge.expiresAt ? i18n.date(charge.expiresAt, { dateStyle: 'long', timeStyle: 'short' }) : null;
 
   const onCopyClick = async () => {
@@ -288,6 +341,14 @@ const PendingChargeCard = ({
         <p>
           <Trans>Pay with Pix. The plan is activated when the payment is confirmed.</Trans>
         </p>
+
+        {charge.couponCode && (
+          <p>
+            <Trans>
+              Coupon {charge.couponCode} applied: {discount} off.
+            </Trans>
+          </p>
+        )}
 
         {expiresAt && (
           <p>
