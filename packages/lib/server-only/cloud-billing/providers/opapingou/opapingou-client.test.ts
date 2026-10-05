@@ -180,6 +180,31 @@ describe('opapingou client', () => {
       expect(error.message).not.toContain('detalhe-interno');
     });
 
+    it('keeps the problem code, which says what went wrong', async () => {
+      api.setNextResponse({
+        status: 422,
+        body: JSON.stringify({ status: 422, code: 'NO_ROUTABLE_ACCOUNT', title: 'Nenhuma conta', detail: 'x' }),
+        headers: { 'content-type': 'application/problem+json' },
+      });
+
+      const error = await catchError(createOpapingouCharge(CHARGE));
+
+      expect(error.message).toBe('Payment provider responded with status 422 (NO_ROUTABLE_ACCOUNT)');
+    });
+
+    it.each([
+      ['lowercase', 'no_routable_account'],
+      ['too long', `A${'B'.repeat(64)}`],
+      ['not a string', 42],
+      ['with spaces', 'NOT A CODE'],
+    ])('drops a problem code that is %s', async (_label, code) => {
+      api.setNextResponse({ status: 400, body: JSON.stringify({ code }) });
+
+      const error = await catchError(createOpapingouCharge(CHARGE));
+
+      expect(error.message).toBe('Payment provider responded with status 400');
+    });
+
     it.each([
       ['has no id', { amountCents: 9990, status: 'PENDING' }],
       ['has the amount in reais', providerCharge({ amountCents: '99.90' })],

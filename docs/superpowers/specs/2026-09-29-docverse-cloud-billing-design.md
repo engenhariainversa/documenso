@@ -110,6 +110,22 @@ O Opa Pingou publicou uma referência da API REST na página `/docs` do site (PR
 | Recorrência | nenhuma menção | nenhuma rota de assinatura, plano ou Pix Automático. O repositório só lista a documentação de Pix Automático de cada banco (Inter, C6), sem produto do Opa Pingou em cima disso | segue a renovação manual: uma cobrança Pix avulsa por mês |
 | Valor bruto ou líquido | desconhecido | `Charge.amountCents` é o valor da cobrança; `Payment.amountCents` é o bruto e `netCents` o líquido | a conferência usa `Charge.amountCents`, sem risco de rejeitar por tarifa |
 
+### Revisão contra a spec final (2026-10-05)
+
+Referência: `docs/superpowers/specs/2026-10-03-api-rest-keys-webhooks-design.md` e `apps/web/src/content/api-docs.ts` / `api-docs-guides.ts` na `main` do Opa Pingou (`b73c474`). Ela torna definitivos a chave de API, os erros e o webhook de saída. As rotas de cobrança continuam na `/docs`, mas a própria spec as deixa para "outra spec".
+
+| Tema | Definição final | Situação no Docverse |
+|---|---|---|
+| Autenticação | `Authorization: Bearer opk_live_…` ou `opk_test_…` (a de teste só enxerga contas `testMode`); 401 `API_KEY_INVALID`/`API_KEY_EXPIRED`, 403 `INSUFFICIENT_SCOPE` | já era `Bearer`; nada muda |
+| Erros | `application/problem+json` com `code` estável e `requestId` | a mensagem de erro passa a trazer o `code` (só se tiver o formato `A_Z_0_9`), nunca o resto do corpo |
+| Webhook: assinatura | `Opa-Signature: t=<unix>,v1=<hex>`, `v1 = HMAC-SHA256(segredo, "<t>.<corpo bruto>")`, segredo `whsec_…`, tolerância de 300 s, comparação em tempo constante | **corrigido**: era `x-opapingou-signature` com HMAC só do corpo |
+| Webhook: corpo | `{ id, type, occurredAt, testMode, data: { type, object } }`; `object` é o recurso igual ao da API | **corrigido**: o corpo é lido; `id` vira o id do evento, `charge.paid` traz o id da cobrança em `data.object.id` |
+| Webhook: eventos | `payment.*`, `charge.paid`/`expired`/`canceled`, `bank_account.*`, `recurrence.*`, `recurring_charge.*` e `ping` (teste) | só `charge.paid` faz algo; o resto (inclusive `ping`) responde 200 e é ignorado. O endpoint deve assinar só `charge.paid` |
+| Webhook: entrega | pelo menos uma vez, deduplicar por `id`; 2xx em até 10 s; 8 tentativas em ≈ 45 h; endpoint desativado depois disso | deduplicação pela tabela de eventos e pela transição condicional da cobrança |
+| Rotas de cobrança | `POST /v1/charges` (com `Idempotency-Key`) e `GET /v1/charges/{id}` documentadas, **não implementadas**: o staging responde 404 `NOT_FOUND` | cliente mantido como está; o checkout real depende do Opa Pingou publicar essas rotas |
+| Idempotency-Key | obrigatoriedade, formato e retenção ainda "A definir" | mantido, com o id da nossa cobrança |
+| Ambientes | staging em `https://api-stg.opapingou.com.br` | apontar `NEXT_PRIVATE_OPAPINGOU_API_URL` para `…/v1` |
+
 ## Fora de escopo
 
 - Ligar a cobrança em produção, criar conta ou plano no Opa Pingou, chamar a API real.
@@ -245,10 +261,11 @@ Tempo limite de 10 segundos. Redirecionamento nunca é seguido, porque a requisi
 | Item | Valor | Origem |
 |---|---|---|
 | Assinatura | HMAC com o segredo do endpoint | documentado |
-| Cabeçalho | `x-opapingou-signature` | **presumido** |
-| Algoritmo | HMAC-SHA256 do corpo bruto, em hexadecimal, com prefixo `sha256=` opcional | **presumido** |
-| Corpo | JSON; formato e eventos **A definir** | não é lido: só precisa ser um objeto JSON |
-| Identificador da entrega | SHA-256 do corpo | nosso, porque o id do evento não está documentado |
+| Cabeçalho | `Opa-Signature: t=<unix>,v1=<hex>` | definitivo (spec do Opa Pingou §6.4) |
+| Algoritmo | HMAC-SHA256 de `"<t>.<corpo bruto>"`, em hexadecimal; aceita vários `v1` | definitivo |
+| Tolerância | `|agora − t|` até 300 s | definitivo |
+| Corpo | `{ id, type, occurredAt, testMode, data: { type, object } }` | definitivo |
+| Identificador do evento | `id` do corpo (o mesmo de `Opa-Event-Id`) | definitivo |
 
 A comparação usa `crypto.timingSafeEqual`. Sem segredo configurado, a verificação sempre falha.
 
@@ -272,21 +289,22 @@ Rotas tRPC (`packages/trpc/server/billing-router/`), as duas restritas a quem te
 
 `POST /api/billing/opapingou/webhook` (Hono, `apps/remix/server/api/billing/webhook.ts`). A rota só repassa corpo bruto e cabeçalhos para `handleOpapingouWebhook`, em `packages/lib`, onde está a lógica e onde ficam os testes.
 
-Como o formato do webhook ainda está "A definir" na documentação, o corpo **não é interpretado**. Uma entrega autêntica só avisa que algo mudou; quem confirma o pagamento é a API (`GET /v1/charges/{id}`), a mesma regra que o próprio Opa Pingou aplica aos webhooks que recebe dos bancos.
+O corpo autêntico diz qual cobrança foi paga (`charge.paid`, `data.object.id`), mas não é a fonte do status nem do valor: quem confirma o pagamento é a API (`GET /v1/charges/{id}`), a mesma regra que o próprio Opa Pingou aplica aos webhooks que recebe dos bancos. A conta do Opa Pingou pode ter cobranças de outros sistemas: uma cobrança que não é nossa não gera consulta nenhuma.
 
 Ordem das verificações:
 
 1. Cobrança desligada → 404.
 2. Corpo maior que 64 KB → 413. O corpo é lido do stream com corte, então um envio sem tamanho declarado também para no limite.
-3. Assinatura ausente ou inválida → 401. Nada é lido nem gravado.
-4. Corpo que não é um objeto JSON → 400.
-5. `confirmCloudSubscriptionCharges`: busca as cobranças do Docverse com `providerChargeId`, status `PENDING` ou `EXPIRED` e criadas nos últimos 2 dias (a cobrança vale 1 dia), no máximo 25, e consulta cada uma no provedor. Para cada uma, da mais antiga para a mais nova:
+3. Assinatura ausente, inválida ou fora da tolerância de 300 s → 401. Nada é lido nem gravado.
+4. Corpo fora do formato (sem `id` ou `type`), ou `charge.paid` sem `data.object.id` → 400.
+5. Evento diferente de `charge.paid` (inclusive `ping`) → grava o evento com `IGNORED` e responde 200.
+6. `confirmCloudSubscriptionCharges({ providerChargeId })`: busca a cobrança do Docverse com esse `providerChargeId`, status `PENDING` ou `EXPIRED` e criada nos últimos 2 dias (a cobrança vale 1 dia e as retentativas do Opa Pingou duram ≈ 45 h). Se não existe, nada é consultado (`NOTHING_TO_CONFIRM`). Sem `providerChargeId`, a função lê todas as recentes (no máximo 25), para uma consulta manual futura. Para cada uma, da mais antiga para a mais nova:
    - o provedor não conhece a cobrança (404) → `UNKNOWN_TO_PROVIDER`, pulada;
    - status diferente de `PAID` → `NOT_PAID`;
    - `amountCents` do provedor diferente do valor da cobrança → `REJECTED_AMOUNT_MISMATCH`, nada é ativado;
    - senão, em uma transação com trava por organização: muda a cobrança para `PAID` com `updateMany ... WHERE status IN (PENDING, EXPIRED)`. Se nenhuma linha mudou, outra entrega já confirmou → `ALREADY_PAID`. Senão, cria ou estende `CloudSubscription` com `computeNextPeriod` → `PROCESSED`.
-6. Se alguma consulta ao provedor falhou (fora do 404), as cobranças que deram certo ficam aplicadas e o erro sobe: a rota responde 500 e o provedor reentrega.
-7. Grava `CloudBillingWebhookEvent` com `eventId = sha256:<hash do corpo>`, `eventType = notification` e o resultado (`PROCESSED`, `REJECTED_AMOUNT_MISMATCH` ou `NOTHING_TO_CONFIRM`). A reentrega dos mesmos bytes mantém o primeiro registro. Responde 200.
+7. Se alguma consulta ao provedor falhou (fora do 404), as cobranças que deram certo ficam aplicadas e o erro sobe: a rota responde 500 e o provedor reentrega.
+8. Grava `CloudBillingWebhookEvent` com `eventId` = `id` do evento, `eventType` = `type` e o resultado (`PROCESSED`, `REJECTED_AMOUNT_MISMATCH`, `NOTHING_TO_CONFIRM` ou `IGNORED`). A reentrega do mesmo evento mantém o primeiro registro. Responde 200.
 
 **Autenticidade** tem duas camadas: a assinatura HMAC, que decide se o Docverse vai consultar o provedor; e a consulta autenticada à API, que é a única fonte do status e do valor. Um corpo que diz "pago" sem o provedor confirmar não ativa nada.
 
@@ -365,10 +383,10 @@ Nenhum teste chama a API real.
 ## O que falta para ligar a cobrança
 
 1. Confirmar as premissas P1 a P10.
-2. **O Opa Pingou colocar a API REST `/v1` no ar.** Hoje ela é só uma proposta documentada; nenhuma das rotas usadas existe.
-3. Conferir de novo contra a versão final da referência os itens "A definir": cabeçalho de autenticação, `Idempotency-Key` (obrigatório? retenção?), URL base definitiva, e todo o webhook de saída (cabeçalho e algoritmo da assinatura, conteúdo assinado, eventos, política de retentativas e tempo limite). A assinatura é o único ponto do webhook ainda presumido: se for diferente, só `opapingou-webhook.ts` muda.
+2. **O Opa Pingou publicar `POST /v1/charges` e `GET /v1/charges/{id}`.** Chave, erros e webhooks já estão no ar (2026-10-05); as rotas de cobrança ainda respondem 404 no staging.
+3. Conferir quando as rotas de cobrança saírem: `Idempotency-Key` (obrigatório? retenção?), URL base definitiva e se os campos de `Charge` mudaram.
 4. Recorrência: a documentação não tem assinatura nem Pix Automático. Decidir se a renovação manual mensal por Pix é aceitável ou se é preciso pedir recorrência ao Opa Pingou ou usar outro provedor.
-5. Criar a conta, conectar um banco e gerar uma chave de API com `charges:write` e `charges:read`, e um endpoint de webhook (`POST /v1/webhook-endpoints`) apontando para `/api/billing/opapingou/webhook`, com o segredo guardado em `NEXT_PRIVATE_OPAPINGOU_WEBHOOK_SECRET`.
+5. Criar a conta, conectar um banco e gerar uma chave de API com `charges:write` e `charges:read` (mais `webhooks:write` se o endpoint for cadastrado pela API), e um endpoint de webhook inscrito só em `charge.paid` apontando para `/api/billing/opapingou/webhook`, com o segredo `whsec_…` guardado em `NEXT_PRIVATE_OPAPINGOU_WEBHOOK_SECRET`.
 6. Testar ponta a ponta fora de produção: sandbox, se o Opa Pingou criar um, ou uma conta `testMode` com `POST /v1/charges/{id}/simulate-payment`; depois uma cobrança real de valor baixo.
 7. Definir as variáveis de ambiente em produção e aplicar a migração.
 8. Decidir o que acontece com as organizações que já existem na instância cloud quando a cobrança for ligada.

@@ -1,12 +1,14 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
+
+import { signOpapingouWebhookBody } from './opapingou-webhook';
 
 /**
  * Simulated Opa Pingou API, for tests only.
  *
  * It implements the charge routes of the provider's REST reference (`/v1/charges`,
- * see `opapingou-client.ts`) and signs webhooks the way the adapter ASSUMES (see
+ * see `opapingou-client.ts`) and signs webhooks as the provider documents (see
  * `opapingou-webhook.ts`). It listens on 127.0.0.1 only and never reaches the real API.
  */
 export const SIMULATED_OPAPINGOU_API_KEY = 'simulated-api-key';
@@ -122,15 +124,23 @@ export const startSimulatedOpapingouApi = async ({
         paidAt: update.paidAt !== undefined ? update.paidAt : defaultPaidAt,
       });
     },
-    buildSignedWebhook: (event: unknown) => {
+    /**
+     * A delivery signed as the provider does (`Opa-Signature`, see `opapingou-webhook.ts`).
+     * `timestamp` is in Unix seconds and defaults to the current time.
+     */
+    buildSignedWebhook: (event: unknown, { timestamp }: { timestamp?: number } = {}) => {
       const rawBody = JSON.stringify(event);
 
-      const signature = createHmac('sha256', webhookSecret).update(rawBody, 'utf8').digest('hex');
+      const signature = signOpapingouWebhookBody({
+        rawBody,
+        secret: webhookSecret,
+        timestamp: timestamp ?? Math.floor(Date.now() / 1000),
+      });
 
       return {
         rawBody,
         signature,
-        headers: { 'x-opapingou-signature': signature },
+        headers: { 'opa-signature': signature },
       };
     },
     close: async () => {

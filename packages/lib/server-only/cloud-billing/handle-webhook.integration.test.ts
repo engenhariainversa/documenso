@@ -28,8 +28,7 @@ import {
   resetCloudBillingForOrganisations,
 } from './test-database';
 
-// Later than the dates of the other integration files, which share the database: the
-// webhook reads back every recent unpaid charge, whatever its organisation.
+// Later than the dates of the other integration files, which share the database.
 const FIRST_DATE_OF_THIS_FILE = new Date('2027-01-01T00:00:00.000Z');
 const CHECKOUT_AT = new Date('2027-03-15T12:00:00.000Z');
 const PAID_AT = new Date('2027-03-15T12:05:00.000Z');
@@ -51,17 +50,38 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
   type NotifyOptions = {
     delivery?: string;
-    body?: Record<string, unknown>;
+    type?: string;
+    resourceType?: string;
+    object?: Record<string, unknown>;
     now?: Date;
   };
 
+  const eventIdOf = (delivery: string) => `evt:${organisationId}:${delivery}`;
+
   /**
-   * An authentic delivery. Its body is arbitrary: the provider has not documented it
-   * and the handler does not read it. The organisation id keeps the hash of the body
-   * apart from other test files.
+   * An authentic delivery in the documented format, signed at `now`. The organisation
+   * id in the event id keeps it apart from other test files.
    */
-  const notify = async ({ delivery = 'delivery_1', body, now = PAID_AT }: NotifyOptions = {}) => {
-    const { rawBody, signature } = api.buildSignedWebhook(body ?? { delivery: `${organisationId}:${delivery}` });
+  const notify = async (
+    charge: { providerChargeId: string | null } | null,
+    {
+      delivery = 'delivery_1',
+      type = 'charge.paid',
+      resourceType = 'charge',
+      object = { id: charge?.providerChargeId, status: 'PAID', amountCents: 9990 },
+      now = PAID_AT,
+    }: NotifyOptions = {},
+  ) => {
+    const { rawBody, signature } = api.buildSignedWebhook(
+      {
+        id: eventIdOf(delivery),
+        type,
+        occurredAt: now.toISOString(),
+        testMode: true,
+        data: { type: resourceType, object },
+      },
+      { timestamp: Math.floor(now.getTime() / 1000) },
+    );
 
     return await handleOpapingouWebhook({ rawBody, signature, now });
   };
@@ -112,12 +132,12 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(charge);
 
-    const result = await notify();
+    const result = await notify(charge);
 
     expect(result).toEqual({
       status: 200,
       outcome: 'PROCESSED',
-      eventId: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      eventId: eventIdOf('delivery_1'),
       chargeId: charge.id,
     });
 
@@ -140,14 +160,14 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(charge);
 
-    const result = await notify();
+    const result = await notify(charge);
 
     const events = await prisma.cloudBillingWebhookEvent.findMany({ where: { eventId: result.eventId } });
 
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
       provider: 'opapingou',
-      eventType: 'notification',
+      eventType: 'charge.paid',
       outcome: 'PROCESSED',
       chargeId: charge.id,
     });
@@ -156,15 +176,8 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
   it('does not trust a body that claims a payment the provider does not report', async () => {
     const charge = await startCheckout();
 
-    const result = await notify({
-      body: {
-        delivery: organisationId,
-        type: 'charge.paid',
-        data: { id: charge.providerChargeId, status: 'PAID', amountCents: 9990 },
-        evento: 'pingou',
-        cobranca: { id: charge.providerChargeId, referencia: charge.id, valor: '99.90', status: 'pingou' },
-      },
-    });
+    // The signed body says PAID, but the API still reports the charge PENDING.
+    const result = await notify(charge);
 
     expect(result.outcome).toBe('NOTHING_TO_CONFIRM');
     expect((await findCharge(charge.id)).status).toBe(CloudSubscriptionChargeStatus.PENDING);
@@ -179,7 +192,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     api.updateCharge(charge.providerChargeId ?? '', { status });
 
-    const result = await notify();
+    const result = await notify(charge);
 
     expect(result.outcome).toBe('NOTHING_TO_CONFIRM');
     expect(await countSubscriptions()).toBe(0);
@@ -190,8 +203,8 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(charge);
 
-    const first = await notify();
-    const second = await notify({ now: new Date('2027-03-16T00:00:00.000Z') });
+    const first = await notify(charge);
+    const second = await notify(charge, { now: new Date('2027-03-16T00:00:00.000Z') });
 
     const subscription = await findSubscription();
 
@@ -205,7 +218,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(charge);
 
-    const results = await Promise.all([notify({ delivery: 'a' }), notify({ delivery: 'b' })]);
+    const results = await Promise.all([notify(charge, { delivery: 'a' }), notify(charge, { delivery: 'b' })]);
 
     const subscription = await findSubscription();
 
@@ -219,12 +232,12 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(charge, 5000);
 
-    const result = await notify();
+    const result = await notify(charge);
 
     expect(result).toEqual({
       status: 200,
       outcome: 'REJECTED_AMOUNT_MISMATCH',
-      eventId: expect.stringMatching(/^sha256:/),
+      eventId: eventIdOf('delivery_1'),
       chargeId: charge.id,
     });
     expect((await findCharge(charge.id)).status).toBe(CloudSubscriptionChargeStatus.PENDING);
@@ -241,7 +254,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(charge);
 
-    const result = await notify();
+    const result = await notify(charge);
 
     expect(result.outcome).toBe('PROCESSED');
     expect(await countSubscriptions()).toBe(1);
@@ -252,7 +265,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(charge);
 
-    const result = await notify({ now: new Date('2027-03-17T12:01:00.000Z') });
+    const result = await notify(charge, { now: new Date('2027-03-17T12:01:00.000Z') });
 
     expect(result.outcome).toBe('NOTHING_TO_CONFIRM');
     expect(chargeReads().map((request) => request.path)).not.toContain(`/v1/charges/${charge.providerChargeId}`);
@@ -266,40 +279,79 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     api.setNextResponse({ status: 503, body: '' });
 
-    await expect(notify()).rejects.toThrow();
+    await expect(notify(charge)).rejects.toThrow();
 
     expect(await countSubscriptions()).toBe(0);
 
-    const retried = await notify();
+    const retried = await notify(charge);
 
     expect(retried.outcome).toBe('PROCESSED');
     expect(await countSubscriptions()).toBe(1);
   });
 
-  it('skips a charge the provider does not know, without holding back the others', async () => {
-    const paidCharge = await startCheckout();
+  it('ignores charge.paid for a charge that is not ours, without asking the provider', async () => {
+    const charge = await startCheckout();
 
-    await prisma.cloudSubscriptionCharge.create({
+    payAtProvider(charge);
+
+    // The provider account also receives the charges of other systems.
+    const result = await notify({ providerChargeId: 'charge-of-another-system' });
+
+    expect(result).toEqual({ status: 200, outcome: 'NOTHING_TO_CONFIRM', eventId: eventIdOf('delivery_1') });
+    expect(chargeReads()).toEqual([]);
+    expect((await findCharge(charge.id)).status).toBe(CloudSubscriptionChargeStatus.PENDING);
+    expect(await countSubscriptions()).toBe(0);
+  });
+
+  it('reads only the charge named by the event', async () => {
+    const charge = await startCheckout();
+    const other = await startCheckout(new Date('2027-03-15T12:01:00.000Z'), true);
+
+    payAtProvider(charge);
+    payAtProvider(other);
+
+    await notify(charge);
+
+    expect(chargeReads().map((request) => request.path)).toEqual([`/v1/charges/${charge.providerChargeId}`]);
+    expect((await findCharge(other.id)).status).toBe(CloudSubscriptionChargeStatus.PENDING);
+  });
+
+  it('does nothing for one of our charges the provider does not know', async () => {
+    const unknown = await prisma.cloudSubscriptionCharge.create({
       data: {
         createdAt: CHECKOUT_AT,
         organisationId,
         provider: 'opapingou',
-        providerChargeId: 'unknown-to-the-provider',
+        providerChargeId: `unknown-to-the-provider-${organisationId}`,
         amountCents: 9990,
         status: CloudSubscriptionChargeStatus.EXPIRED,
       },
     });
 
-    payAtProvider(paidCharge);
+    const result = await notify(unknown);
 
-    const result = await notify();
+    expect(result.outcome).toBe('NOTHING_TO_CONFIRM');
+    expect(chargeReads().map((request) => request.path)).toEqual([`/v1/charges/${unknown.providerChargeId}`]);
+  });
 
-    const readPaths = chargeReads().map((request) => request.path);
+  it.each([
+    ['ping', 'ping', {}],
+    ['payment.confirmed', 'payment', { id: 'payment-1', status: 'CONFIRMED' }],
+    ['charge.expired', 'charge', { id: 'whatever', status: 'EXPIRED' }],
+  ])('acknowledges and ignores %s', async (type, resourceType, object) => {
+    const charge = await startCheckout();
 
-    expect(result.outcome).toBe('PROCESSED');
-    expect(result.chargeId).toBe(paidCharge.id);
-    expect(readPaths).toContain('/v1/charges/unknown-to-the-provider');
-    expect(readPaths).toContain(`/v1/charges/${paidCharge.providerChargeId}`);
+    payAtProvider(charge);
+
+    const result = await notify(charge, { type, resourceType, object, delivery: `ignored-${type}` });
+
+    expect(result).toEqual({ status: 200, outcome: 'IGNORED', eventId: eventIdOf(`ignored-${type}`) });
+    expect(chargeReads()).toEqual([]);
+    expect(await countSubscriptions()).toBe(0);
+    expect(await prisma.cloudBillingWebhookEvent.findFirst({ where: { eventId: result.eventId } })).toMatchObject({
+      eventType: type,
+      outcome: 'IGNORED',
+    });
   });
 
   it('extends from the end of the running period on renewal', async () => {
@@ -307,14 +359,14 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(firstCharge);
 
-    await notify({ delivery: 'first' });
+    await notify(firstCharge, { delivery: 'first' });
 
     const renewalAt = new Date('2027-04-10T09:00:00.000Z');
     const renewalCharge = await startCheckout(renewalAt);
 
     payAtProvider(renewalCharge);
 
-    const result = await notify({ delivery: 'renewal', now: renewalAt });
+    const result = await notify(renewalCharge, { delivery: 'renewal', now: renewalAt });
 
     const subscription = await findSubscription();
     const paidRenewal = await findCharge(renewalCharge.id);
@@ -336,14 +388,14 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(firstCharge);
 
-    await notify({ delivery: 'first' });
+    await notify(firstCharge, { delivery: 'first' });
 
     const renewalAt = new Date('2027-05-01T09:00:00.000Z');
     const renewalCharge = await startCheckout(renewalAt);
 
     payAtProvider(renewalCharge);
 
-    await notify({ delivery: 'renewal', now: renewalAt });
+    await notify(renewalCharge, { delivery: 'renewal', now: renewalAt });
 
     const subscription = await findSubscription();
 
@@ -358,7 +410,10 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
     payAtProvider(firstCharge);
     payAtProvider(secondCharge);
 
-    const result = await notify();
+    // One charge.paid per charge, the oldest first.
+    await notify(firstCharge, { delivery: 'first' });
+
+    const result = await notify(secondCharge, { delivery: 'second' });
 
     const subscription = await findSubscription();
 
@@ -379,7 +434,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
 
     payAtProvider(charge);
 
-    await notify();
+    await notify(charge);
 
     expect(await prisma.cloudSubscription.count({ where: { organisationId: other.organisation.id } })).toBe(0);
   });

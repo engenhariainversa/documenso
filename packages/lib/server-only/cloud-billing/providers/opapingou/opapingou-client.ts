@@ -6,23 +6,21 @@ import { AppError, AppErrorCode } from '../../../../errors/app-error';
 /**
  * Opa Pingou charges.
  *
- * Contract: the REST reference published by the provider at `/docs` (checked on
- * 2026-09-30, source `apps/web/src/content/api-docs.ts` of the provider's repository).
- * That reference is a PREVIEW: it says the REST layer does not exist yet and may
- * change. Items it marks "A definir" (undecided) are labelled UNDECIDED below and
- * must be checked again before billing is turned on. Keep every assumption about the
- * API shape inside this file.
+ * Contract: the provider's `/docs` reference (`apps/web/src/content/api-docs.ts` and
+ * `api-docs-guides.ts`) and its design spec `2026-10-03-api-rest-keys-webhooks-design.md`,
+ * on the provider's `main` as of 2026-10-05. Keep every assumption about the API shape
+ * inside this file.
  *
- * - DOCUMENTED: POST {base}/v1/charges and GET {base}/v1/charges/{id}, JSON in and out
- * - DOCUMENTED: request `amountCents` (integer), `description`, `validity`, `kind`
- * - DOCUMENTED: `Idempotency-Key` header on charge creation
- * - DOCUMENTED: response `Charge` with `id`, `amountCents`, `status`
- *   (`PENDING | PAID | EXPIRED | CANCELED`), `brCode`, `paymentLink`, `expiresAt`, `paidAt`
- * - DOCUMENTED: scopes `charges:write` (create) and `charges:read` (read)
- * - UNDECIDED: `Authorization: Bearer <key>`, which the examples use
- * - UNDECIDED: whether `Idempotency-Key` is required, how long it is remembered
- * - UNDECIDED: final base URL and a sandbox environment
- * - UNDECIDED: error codes inside the `application/problem+json` body (never read here)
+ * - DEFINITIVE: `Authorization: Bearer opk_live_…` (or `opk_test_…`, which only sees
+ *   test-mode bank accounts); 401 `API_KEY_INVALID`/`API_KEY_EXPIRED`, 403 `INSUFFICIENT_SCOPE`
+ * - DEFINITIVE: errors are `application/problem+json` with a stable `code`
+ * - DEFINITIVE: scopes `charges:write` (create) and `charges:read` (read)
+ * - DOCUMENTED, NOT DEPLOYED YET: POST {base}/v1/charges and GET {base}/v1/charges/{id}
+ *   (`amountCents`, `description`, `validity`, `kind` in; `Charge` out). The provider's
+ *   spec leaves the charge routes to a later spec; on 2026-10-05 staging answers 404.
+ * - DOCUMENTED: `Idempotency-Key` on charge creation; whether it is required and how
+ *   long it is remembered are still "A definir"
+ * - UNDECIDED: final base URL; staging is `https://api-stg.opapingou.com.br/v1`
  */
 const OPAPINGOU_CHARGES_PATH = '/charges';
 
@@ -232,9 +230,12 @@ const requestOpapingouCharge = async ({
   }
 
   if (!response.ok) {
-    // The response body is never included: it is provider controlled.
+    // Only the problem `code` is kept from the body, and only when it looks like one:
+    // the rest is provider controlled.
+    const code = await readProblemCode(response);
+
     throw new AppError(AppErrorCode.UNKNOWN_ERROR, {
-      message: `Payment provider responded with status ${response.status}`,
+      message: `Payment provider responded with status ${response.status}${code ? ` (${code})` : ''}`,
     });
   }
 
@@ -249,6 +250,18 @@ const requestOpapingouCharge = async ({
   }
 
   return parsed.data;
+};
+
+const PROBLEM_CODE_REGEX = /^[A-Z][A-Z0-9_]{0,63}$/;
+
+const readProblemCode = async (response: Response) => {
+  const json: unknown = await response.json().catch(() => null);
+
+  if (typeof json !== 'object' || json === null || !('code' in json)) {
+    return null;
+  }
+
+  return typeof json.code === 'string' && PROBLEM_CODE_REGEX.test(json.code) ? json.code : null;
 };
 
 /**
