@@ -46,6 +46,15 @@ describe('cloud billing constants', () => {
 
       expect(OPAPINGOU_API_URL()).toBe('http://127.0.0.1:9999/v1');
     });
+
+    it.each([
+      'https://api-stg.opapingou.com.br',
+      'https://api-stg.opapingou.com.br/',
+    ])('appends /v1 when %s is configured without it', (value) => {
+      vi.stubEnv('NEXT_PRIVATE_OPAPINGOU_API_URL', value);
+
+      expect(OPAPINGOU_API_URL()).toBe('https://api-stg.opapingou.com.br/v1');
+    });
   });
 
   describe('secrets', () => {

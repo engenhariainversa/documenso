@@ -3,7 +3,11 @@ import {
   CLOUD_BILLING_WEBHOOK_MAX_BODY_BYTES,
   handleOpapingouWebhook,
 } from '@documenso/lib/server-only/cloud-billing/handle-webhook';
-import { OPAPINGOU_SIGNATURE_HEADER } from '@documenso/lib/server-only/cloud-billing/providers/opapingou/opapingou-webhook';
+import {
+  OPAPINGOU_EVENT_ID_HEADER,
+  OPAPINGOU_EVENT_TYPE_HEADER,
+  OPAPINGOU_SIGNATURE_HEADER,
+} from '@documenso/lib/server-only/cloud-billing/providers/opapingou/opapingou-webhook';
 import { readRequestBodyWithLimit } from '@documenso/lib/server-only/cloud-billing/read-request-body';
 import { createRateLimitMiddleware } from '@documenso/lib/server-only/rate-limit/rate-limit-middleware';
 import { cloudBillingWebhookRateLimit } from '@documenso/lib/server-only/rate-limit/rate-limits';
@@ -17,7 +21,7 @@ const rateLimitMiddleware = createRateLimitMiddleware(cloudBillingWebhookRateLim
  * Payment provider webhooks for Docverse Cloud billing.
  *
  * All the logic lives in `handleOpapingouWebhook`. This route only hands it the raw
- * body and the signature, and logs the outcome. The body, the signature and the
+ * body and the `Opa-*` headers, and logs the outcome. The body, the signature and the
  * secret are never logged.
  */
 export const billingWebhookRoute = new Hono<HonoEnv>()
@@ -50,6 +54,8 @@ export const billingWebhookRoute = new Hono<HonoEnv>()
       const { status, outcome, eventId, chargeId } = await handleOpapingouWebhook({
         rawBody,
         signature: c.req.header(OPAPINGOU_SIGNATURE_HEADER),
+        eventIdHeader: c.req.header(OPAPINGOU_EVENT_ID_HEADER),
+        eventTypeHeader: c.req.header(OPAPINGOU_EVENT_TYPE_HEADER),
       });
 
       logger.info({ outcome, eventId, chargeId }, 'Cloud billing webhook handled');

@@ -150,7 +150,7 @@ Referência: `docs/superpowers/specs/2026-10-03-api-rest-keys-webhooks-design.md
 | Variável | Uso | Padrão |
 |---|---|---|
 | `NEXT_PUBLIC_CLOUD_BILLING_ENABLED` | `"true"` liga a cobrança | vazio (desligada) |
-| `NEXT_PRIVATE_OPAPINGOU_API_URL` | URL base da API | `https://api.opapingou.com.br/v1` |
+| `NEXT_PRIVATE_OPAPINGOU_API_URL` | URL base da API, terminando em `/v1` (sem ele, o `/v1` é acrescentado; staging: `https://api-stg.opapingou.com.br/v1`) | `https://api.opapingou.com.br/v1` |
 | `NEXT_PRIVATE_OPAPINGOU_API_KEY` | chave da API | vazio |
 | `NEXT_PRIVATE_OPAPINGOU_WEBHOOK_SECRET` | segredo para verificar o webhook | vazio |
 
@@ -265,7 +265,8 @@ Tempo limite de 10 segundos. Redirecionamento nunca é seguido, porque a requisi
 | Algoritmo | HMAC-SHA256 de `"<t>.<corpo bruto>"`, em hexadecimal; aceita vários `v1` | definitivo |
 | Tolerância | `|agora − t|` até 300 s | definitivo |
 | Corpo | `{ id, type, occurredAt, testMode, data: { type, object } }` | definitivo |
-| Identificador do evento | `id` do corpo (o mesmo de `Opa-Event-Id`) | definitivo |
+| Identificador do evento | `id` do corpo, repetido no cabeçalho `Opa-Event-Id` | definitivo |
+| Tipo do evento | `type` do corpo, repetido no cabeçalho `Opa-Event-Type` | definitivo |
 
 A comparação usa `crypto.timingSafeEqual`. Sem segredo configurado, a verificação sempre falha.
 
@@ -296,7 +297,8 @@ Ordem das verificações:
 1. Cobrança desligada → 404.
 2. Corpo maior que 64 KB → 413. O corpo é lido do stream com corte, então um envio sem tamanho declarado também para no limite.
 3. Assinatura ausente, inválida ou fora da tolerância de 300 s → 401. Nada é lido nem gravado.
-4. Corpo fora do formato (sem `id` ou `type`), ou `charge.paid` sem `data.object.id` → 400.
+4. Corpo fora do formato (sem `id` ou `type`), `charge.paid` sem `data.object.id`, ou `Opa-Event-Id`/`Opa-Event-Type` diferentes do `id`/`type` do corpo → 400. Os cabeçalhos não entram na assinatura: vale o corpo, e um cabeçalho que discorda dele é recusado; sem os cabeçalhos, o corpo basta.
+4a. Evento já registrado como `PROCESSED` (mesmo `Opa-Event-Id`) → 200 `ALREADY_PROCESSED`, sem consultar a API de novo. Um evento registrado com outro resultado é tratado de novo, o que é seguro.
 5. Evento diferente de `charge.paid` (inclusive `ping`) → grava o evento com `IGNORED` e responde 200.
 6. `confirmCloudSubscriptionCharges({ providerChargeId })`: busca a cobrança do Docverse com esse `providerChargeId`, status `PENDING` ou `EXPIRED` e criada nos últimos 2 dias (a cobrança vale 1 dia e as retentativas do Opa Pingou duram ≈ 45 h). Se não existe, nada é consultado (`NOTHING_TO_CONFIRM`). Sem `providerChargeId`, a função lê todas as recentes (no máximo 25), para uma consulta manual futura. Para cada uma, da mais antiga para a mais nova:
    - o provedor não conhece a cobrança (404) → `UNKNOWN_TO_PROVIDER`, pulada;
@@ -308,7 +310,7 @@ Ordem das verificações:
 
 **Autenticidade** tem duas camadas: a assinatura HMAC, que decide se o Docverse vai consultar o provedor; e a consulta autenticada à API, que é a única fonte do status e do valor. Um corpo que diz "pago" sem o provedor confirmar não ativa nada.
 
-**Idempotência** está na transição condicional da cobrança: reentregas, entregas diferentes sobre o mesmo pagamento e entregas simultâneas concedem um único mês.
+**Idempotência** começa pelo id do evento (passo 4a), que poupa a consulta à API numa reentrega, mas a garantia está na transição condicional da cobrança: reentregas, entregas diferentes sobre o mesmo pagamento e entregas simultâneas concedem um único mês.
 
 Uma cobrança substituída pelo usuário (`EXPIRED` do nosso lado) ainda é consultada: se o dinheiro entrou, o pagamento é aceito.
 

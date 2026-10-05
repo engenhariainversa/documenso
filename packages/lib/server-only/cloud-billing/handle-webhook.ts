@@ -45,10 +45,16 @@ export type TChargeConfirmationOutcome =
  * What happened to an authentic, well formed notification. `IGNORED` is any event
  * other than `charge.paid`, including the endpoint test (`ping`).
  */
-export type TWebhookEventOutcome = 'PROCESSED' | 'NOTHING_TO_CONFIRM' | 'REJECTED_AMOUNT_MISMATCH' | 'IGNORED';
+export type TWebhookEventOutcome =
+  | 'PROCESSED'
+  | 'NOTHING_TO_CONFIRM'
+  | 'REJECTED_AMOUNT_MISMATCH'
+  | 'IGNORED'
+  | 'ALREADY_PROCESSED';
 
 /**
- * Why a request was refused before being treated as a notification.
+ * Why a request was refused before being treated as a notification. `INVALID_BODY`
+ * also covers `Opa-Event-Id` or `Opa-Event-Type` headers that disagree with the body.
  */
 export type TWebhookRefusal = 'DISABLED' | 'BODY_TOO_LARGE' | 'INVALID_SIGNATURE' | 'INVALID_BODY';
 
@@ -69,6 +75,16 @@ export type HandleOpapingouWebhookOptions = {
    * The `Opa-Signature` header.
    */
   signature: string | null | undefined;
+
+  /**
+   * The `Opa-Event-Id` header. Not signed: when present it must match the body's `id`.
+   */
+  eventIdHeader?: string | null;
+
+  /**
+   * The `Opa-Event-Type` header. Not signed: when present it must match the body's `type`.
+   */
+  eventTypeHeader?: string | null;
   now?: Date;
 };
 
@@ -84,6 +100,10 @@ export type HandleOpapingouWebhookOptions = {
  * (including `ping`, the endpoint test) is acknowledged and ignored. A delivery that
  * changes nothing is harmless, and the same event can be handled any number of times.
  *
+ * The event id (`Opa-Event-Id`, the body's `id`) makes deliveries idempotent: an
+ * event already recorded as `PROCESSED` answers `ALREADY_PROCESSED` without reading
+ * the provider again. Any other recorded outcome is handled again, which is safe.
+ *
  * Authentic notifications answer 2xx even when nothing was confirmed. If the
  * provider cannot be read, the error propagates and the route answers 5xx, so the
  * provider delivers again.
@@ -91,6 +111,8 @@ export type HandleOpapingouWebhookOptions = {
 export const handleOpapingouWebhook = async ({
   rawBody,
   signature,
+  eventIdHeader,
+  eventTypeHeader,
   now = new Date(),
 }: HandleOpapingouWebhookOptions): Promise<TWebhookResult> => {
   if (!IS_CLOUD_BILLING_ENABLED()) {
@@ -118,11 +140,32 @@ export const handleOpapingouWebhook = async ({
     return { status: 400, outcome: 'INVALID_BODY' };
   }
 
+  if (
+    (eventIdHeader && eventIdHeader !== notification.eventId) ||
+    (eventTypeHeader && eventTypeHeader !== notification.eventType)
+  ) {
+    return { status: 400, outcome: 'INVALID_BODY' };
+  }
+
   const isChargePaid = notification.eventType === OPAPINGOU_CHARGE_PAID_EVENT;
 
   // A `charge.paid` that does not name its charge does not follow the contract.
   if (isChargePaid && !notification.providerChargeId) {
     return { status: 400, outcome: 'INVALID_BODY' };
+  }
+
+  const recorded = await prisma.cloudBillingWebhookEvent.findUnique({
+    where: { provider_eventId: { provider: CLOUD_BILLING_PROVIDER, eventId: notification.eventId } },
+    select: { outcome: true, chargeId: true },
+  });
+
+  if (recorded?.outcome === 'PROCESSED') {
+    return {
+      status: 200,
+      outcome: 'ALREADY_PROCESSED',
+      eventId: notification.eventId,
+      ...(recorded.chargeId ? { chargeId: recorded.chargeId } : {}),
+    };
   }
 
   const confirmations =

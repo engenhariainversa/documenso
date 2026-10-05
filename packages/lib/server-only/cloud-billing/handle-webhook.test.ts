@@ -34,8 +34,11 @@ const RAW_BODY = JSON.stringify({
 const sign = (rawBody: string, timestamp = NOW.getTime() / 1000) =>
   signOpapingouWebhookBody({ rawBody, secret: SECRET, timestamp });
 
-const handle = async (rawBody: string, signature: string | null | undefined) =>
-  await handleOpapingouWebhook({ rawBody, signature, now: NOW });
+const handle = async (
+  rawBody: string,
+  signature: string | null | undefined,
+  headers: { eventIdHeader?: string; eventTypeHeader?: string } = {},
+) => await handleOpapingouWebhook({ rawBody, signature, ...headers, now: NOW });
 
 describe('handleOpapingouWebhook without touching the database', () => {
   beforeEach(() => {
@@ -121,6 +124,15 @@ describe('handleOpapingouWebhook without touching the database', () => {
     ],
   ])('is a bad request for %s with a valid signature', async (_label, rawBody) => {
     const result = await handle(rawBody, sign(rawBody));
+
+    expect(result).toEqual({ status: 400, outcome: 'INVALID_BODY' });
+  });
+
+  it.each([
+    ['Opa-Event-Id', { eventIdHeader: 'evt-other' }],
+    ['Opa-Event-Type', { eventTypeHeader: 'ping' }],
+  ])('is a bad request when %s disagrees with the signed body', async (_label, headers) => {
+    const result = await handle(RAW_BODY, sign(RAW_BODY), headers);
 
     expect(result).toEqual({ status: 400, outcome: 'INVALID_BODY' });
   });
