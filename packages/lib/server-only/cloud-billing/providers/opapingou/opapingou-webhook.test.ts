@@ -1,194 +1,161 @@
+import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
 import {
-  parseOpapingouWebhookEvent,
+  OPAPINGOU_SIGNATURE_TOLERANCE_SECONDS,
+  parseOpapingouWebhookNotification,
   signOpapingouWebhookBody,
   verifyOpapingouWebhookSignature,
 } from './opapingou-webhook';
 
-const SECRET = 'webhook-secret-for-tests';
+const SECRET = 'whsec_webhook-secret-for-tests';
 
-const PAYMENT_EVENT = {
-  id: 'evt_1',
-  evento: 'pingou',
-  cobranca: {
-    id: 'cob_1',
-    referencia: 'charge_reference_1',
-    valor: '99.90',
-    status: 'pingou',
-  },
+const NOW = new Date('2026-10-05T12:00:00.000Z');
+const TIMESTAMP = NOW.getTime() / 1000;
+
+const CHARGE_ID = '9a8b7c6d-5e4f-4321-a0b1-c2d3e4f5a6b7';
+
+// The body documented by the provider (spec §6.4).
+const CHARGE_PAID_EVENT = {
+  id: 'e6f7a8b9-0c1d-4e2f-83a4-b5c6d7e8f9a0',
+  type: 'charge.paid',
+  occurredAt: '2026-10-05T11:59:58.000Z',
+  testMode: true,
+  data: { type: 'charge', object: { id: CHARGE_ID, status: 'PAID', amountCents: 9990 } },
 };
 
-const RAW_BODY = JSON.stringify(PAYMENT_EVENT);
+const RAW_BODY = JSON.stringify(CHARGE_PAID_EVENT);
+
+const sign = (rawBody = RAW_BODY, timestamp = TIMESTAMP, secret = SECRET) =>
+  signOpapingouWebhookBody({ rawBody, secret, timestamp });
+
+const verify = (signature: string | null | undefined, rawBody = RAW_BODY, secret: string | null | undefined = SECRET) =>
+  verifyOpapingouWebhookSignature({ rawBody, signature, secret, now: NOW });
 
 describe('verifyOpapingouWebhookSignature', () => {
-  const signature = signOpapingouWebhookBody({ rawBody: RAW_BODY, secret: SECRET });
+  it('produces t=<unix>,v1=<hex HMAC-SHA256 of "t.body">', () => {
+    const expected = createHmac('sha256', SECRET).update(`${TIMESTAMP}.${RAW_BODY}`).digest('hex');
 
-  it('produces a hex SHA-256 signature', () => {
-    expect(signature).toMatch(/^[0-9a-f]{64}$/);
+    expect(sign()).toBe(`t=${TIMESTAMP},v1=${expected}`);
   });
 
   it('accepts the correct signature', () => {
-    expect(verifyOpapingouWebhookSignature({ rawBody: RAW_BODY, signature, secret: SECRET })).toBe(true);
+    expect(verify(sign())).toBe(true);
   });
 
-  it('accepts the sha256= prefix', () => {
-    expect(
-      verifyOpapingouWebhookSignature({ rawBody: RAW_BODY, signature: `sha256=${signature}`, secret: SECRET }),
-    ).toBe(true);
+  it('accepts an uppercase signature and spaces around the pairs', () => {
+    const [t, v1] = sign().split(',');
+
+    expect(verify(`${t}, v1=${v1.slice(3).toUpperCase()}`)).toBe(true);
   });
 
-  it('accepts an uppercase signature', () => {
-    expect(
-      verifyOpapingouWebhookSignature({ rawBody: RAW_BODY, signature: signature.toUpperCase(), secret: SECRET }),
-    ).toBe(true);
+  it('accepts the pairs in any order and ignores unknown ones', () => {
+    const [t, v1] = sign().split(',');
+
+    expect(verify(`v0=abc,${v1},${t}`)).toBe(true);
   });
 
-  it('accepts surrounding whitespace', () => {
-    expect(verifyOpapingouWebhookSignature({ rawBody: RAW_BODY, signature: ` ${signature} `, secret: SECRET })).toBe(
-      true,
-    );
+  it('accepts when any of several v1 values matches', () => {
+    const [t, v1] = sign().split(',');
+
+    expect(verify(`${t},v1=${'0'.repeat(64)},${v1}`)).toBe(true);
+  });
+
+  it(`accepts a timestamp ${OPAPINGOU_SIGNATURE_TOLERANCE_SECONDS} seconds away, in either direction`, () => {
+    expect(verify(sign(RAW_BODY, TIMESTAMP - OPAPINGOU_SIGNATURE_TOLERANCE_SECONDS))).toBe(true);
+    expect(verify(sign(RAW_BODY, TIMESTAMP + OPAPINGOU_SIGNATURE_TOLERANCE_SECONDS))).toBe(true);
+  });
+
+  it('rejects a timestamp outside the tolerance (replay)', () => {
+    expect(verify(sign(RAW_BODY, TIMESTAMP - OPAPINGOU_SIGNATURE_TOLERANCE_SECONDS - 1))).toBe(false);
+    expect(verify(sign(RAW_BODY, TIMESTAMP + OPAPINGOU_SIGNATURE_TOLERANCE_SECONDS + 1))).toBe(false);
+  });
+
+  it('rejects a signature whose timestamp was changed', () => {
+    const [, v1] = sign().split(',');
+
+    expect(verify(`t=${TIMESTAMP + 1},${v1}`)).toBe(false);
   });
 
   it('rejects a body changed by one character', () => {
-    const tampered = RAW_BODY.replace('99.90', '99.91');
-
-    expect(verifyOpapingouWebhookSignature({ rawBody: tampered, signature, secret: SECRET })).toBe(false);
+    expect(verify(sign(), RAW_BODY.replace('9990', '9991'))).toBe(false);
   });
 
   it('rejects a signature made with another secret', () => {
-    const other = signOpapingouWebhookBody({ rawBody: RAW_BODY, secret: 'another-secret' });
+    expect(verify(sign(RAW_BODY, TIMESTAMP, 'whsec_another'))).toBe(false);
+  });
 
-    expect(verifyOpapingouWebhookSignature({ rawBody: RAW_BODY, signature: other, secret: SECRET })).toBe(false);
+  it('rejects the HMAC of the body alone (the previously assumed format)', () => {
+    const bodyOnly = createHmac('sha256', SECRET).update(RAW_BODY).digest('hex');
+
+    expect(verify(bodyOnly)).toBe(false);
+    expect(verify(`t=${TIMESTAMP},v1=${bodyOnly}`)).toBe(false);
   });
 
   it.each([
     ['missing', undefined],
     ['null', null],
     ['empty', ''],
-    ['too short', 'abcdef'],
-    ['too long', `${'a'.repeat(64)}ff`],
-    ['not hex', 'z'.repeat(64)],
-    ['prefix only', 'sha256='],
-  ])('rejects a %s signature without throwing', (_label, value) => {
-    expect(verifyOpapingouWebhookSignature({ rawBody: RAW_BODY, signature: value, secret: SECRET })).toBe(false);
+    ['without t', `v1=${'a'.repeat(64)}`],
+    ['without v1', `t=${TIMESTAMP}`],
+    ['with a short v1', `t=${TIMESTAMP},v1=abcdef`],
+    ['with a non-hex v1', `t=${TIMESTAMP},v1=${'z'.repeat(64)}`],
+    ['with a non-numeric t', `t=abc,v1=${'a'.repeat(64)}`],
+    ['made of garbage', ',,,==,'],
+  ])('rejects a signature %s without throwing', (_label, value) => {
+    expect(verify(value)).toBe(false);
   });
 
   it.each([undefined, null, ''])('always rejects when the secret is %j', (secret) => {
-    const signedWithEmptySecret = signOpapingouWebhookBody({ rawBody: RAW_BODY, secret: '' });
-
-    expect(verifyOpapingouWebhookSignature({ rawBody: RAW_BODY, signature: signedWithEmptySecret, secret })).toBe(
-      false,
-    );
+    expect(verify(sign(RAW_BODY, TIMESTAMP, ''), RAW_BODY, secret)).toBe(false);
   });
 
   it('verifies the exact bytes, not the parsed JSON', () => {
-    const reformatted = JSON.stringify(PAYMENT_EVENT, null, 2);
-
-    expect(verifyOpapingouWebhookSignature({ rawBody: reformatted, signature, secret: SECRET })).toBe(false);
+    expect(verify(sign(), JSON.stringify(CHARGE_PAID_EVENT, null, 2))).toBe(false);
   });
 });
 
-describe('parseOpapingouWebhookEvent', () => {
-  it('reads a payment event', () => {
-    expect(parseOpapingouWebhookEvent(RAW_BODY)).toEqual({
-      eventId: 'pingou:evt_1',
-      eventType: 'pingou',
-      isPayment: true,
-      providerChargeId: 'cob_1',
-      reference: 'charge_reference_1',
-      amountCents: 9990,
+describe('parseOpapingouWebhookNotification', () => {
+  it('reads the event id, type, mode and charge id of charge.paid', () => {
+    expect(parseOpapingouWebhookNotification(RAW_BODY)).toEqual({
+      eventId: CHARGE_PAID_EVENT.id,
+      eventType: 'charge.paid',
+      testMode: true,
+      providerChargeId: CHARGE_ID,
     });
   });
 
-  it('reads a numeric amount', () => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, valor: 99.9 } }),
-    );
+  it('reads ping, which has an empty object', () => {
+    const ping = {
+      id: 'evt-ping',
+      type: 'ping',
+      occurredAt: CHARGE_PAID_EVENT.occurredAt,
+      testMode: false,
+      data: { type: 'ping', object: {} },
+    };
 
-    expect(event?.amountCents).toBe(9990);
-  });
-
-  it('reads numeric ids as strings', () => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ id: 77, evento: 'pingou', cobranca: { id: 123, valor: '99.90' } }),
-    );
-
-    expect(event?.eventId).toBe('pingou:77');
-    expect(event?.providerChargeId).toBe('123');
-    expect(event?.reference).toBeNull();
-  });
-
-  it('leaves the amount null when it cannot be read', () => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, valor: 'noventa' } }),
-    );
-
-    expect(event?.isPayment).toBe(true);
-    expect(event?.amountCents).toBeNull();
-  });
-
-  it('derives a stable event id from the body when the provider sends none', () => {
-    const { id: _id, ...withoutId } = PAYMENT_EVENT;
-
-    const first = parseOpapingouWebhookEvent(JSON.stringify(withoutId));
-    const second = parseOpapingouWebhookEvent(JSON.stringify(withoutId));
-    const different = parseOpapingouWebhookEvent(JSON.stringify({ ...withoutId, evento: 'outro' }));
-
-    expect(first?.eventId).toMatch(/^sha256:[0-9a-f]{64}$/);
-    expect(second?.eventId).toBe(first?.eventId);
-    expect(different?.eventId).not.toBe(first?.eventId);
-  });
-
-  it('flags other event types as not a payment', () => {
-    const event = parseOpapingouWebhookEvent(JSON.stringify({ id: 'evt_2', evento: 'cobranca_expirada' }));
-
-    expect(event).toEqual({
-      eventId: 'cobranca_expirada:evt_2',
-      eventType: 'cobranca_expirada',
-      isPayment: false,
+    expect(parseOpapingouWebhookNotification(JSON.stringify(ping))).toEqual({
+      eventId: 'evt-ping',
+      eventType: 'ping',
+      testMode: false,
       providerChargeId: null,
-      reference: null,
-      amountCents: null,
     });
   });
 
-  it('gives different event ids to different events that share the provider id', () => {
-    const created = parseOpapingouWebhookEvent(JSON.stringify({ id: 'cob_1', evento: 'cobranca_criada' }));
-    const paid = parseOpapingouWebhookEvent(JSON.stringify({ ...PAYMENT_EVENT, id: 'cob_1' }));
+  it('does not take a charge id from an event about another resource', () => {
+    const payment = {
+      ...CHARGE_PAID_EVENT,
+      type: 'payment.confirmed',
+      data: { type: 'payment', object: { id: 'payment-id', charge: { id: CHARGE_ID } } },
+    };
 
-    expect(created?.eventId).toBe('cobranca_criada:cob_1');
-    expect(paid?.eventId).toBe('pingou:cob_1');
+    expect(parseOpapingouWebhookNotification(JSON.stringify(payment))?.providerChargeId).toBeNull();
   });
 
-  it('is a payment when the charge status is absent', () => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ id: 'evt_1', evento: 'pingou', cobranca: { id: 'cob_1', valor: '99.90' } }),
-    );
+  it('has no charge id when charge.paid comes without one', () => {
+    const withoutObject = { ...CHARGE_PAID_EVENT, data: { type: 'charge', object: {} } };
 
-    expect(event?.isPayment).toBe(true);
-  });
-
-  it.each([
-    'pendente',
-    'criada',
-    'expirada',
-    '',
-  ])('is not a payment when the charge status is %j, even for the payment event', (status) => {
-    const event = parseOpapingouWebhookEvent(
-      JSON.stringify({ ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, status } }),
-    );
-
-    expect(event?.isPayment).toBe(false);
-  });
-
-  it.each([
-    ['event id', { ...PAYMENT_EVENT, id: 'a'.repeat(256) }],
-    ['event name', { ...PAYMENT_EVENT, evento: 'a'.repeat(256) }],
-    ['charge id', { ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, id: 'a'.repeat(256) } }],
-    ['reference', { ...PAYMENT_EVENT, cobranca: { ...PAYMENT_EVENT.cobranca, referencia: 'a'.repeat(256) } }],
-  ])('returns null for an oversized %s', (_label, body) => {
-    expect(parseOpapingouWebhookEvent(JSON.stringify(body))).toBeNull();
+    expect(parseOpapingouWebhookNotification(JSON.stringify(withoutObject))?.providerChargeId).toBeNull();
   });
 
   it.each([
@@ -197,10 +164,10 @@ describe('parseOpapingouWebhookEvent', () => {
     ['an array', '[]'],
     ['null', 'null'],
     ['a string', '"pingou"'],
-    ['an object without the event name', JSON.stringify({ id: 'evt_3' })],
-    ['an empty event name', JSON.stringify({ id: 'evt_3', evento: '' })],
-    ['a non-string event name', JSON.stringify({ id: 'evt_3', evento: 42 })],
+    ['an object without id', JSON.stringify({ type: 'charge.paid' })],
+    ['an object without type', JSON.stringify({ id: 'evt' })],
+    ['the old presumed format', JSON.stringify({ evento: 'pingou', cobranca: { valor: '99.90' } })],
   ])('returns null for %s', (_label, rawBody) => {
-    expect(parseOpapingouWebhookEvent(rawBody)).toBeNull();
+    expect(parseOpapingouWebhookNotification(rawBody)).toBeNull();
   });
 });

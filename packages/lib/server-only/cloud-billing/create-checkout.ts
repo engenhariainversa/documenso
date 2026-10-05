@@ -64,7 +64,7 @@ export const createCloudSubscriptionCheckout = async ({
     });
   }
 
-  // Without the webhook secret a payment could never be confirmed, so refuse to charge.
+  // Without the webhook secret no payment notification would ever be accepted, so refuse to charge.
   if (!IS_CLOUD_BILLING_PROVIDER_CONFIGURED()) {
     throw new AppError(AppErrorCode.NOT_SETUP, {
       message: 'Payment provider is not configured',
@@ -77,10 +77,12 @@ export const createCloudSubscriptionCheckout = async ({
     return mapChargeToCheckout(charge);
   }
 
+  // Our charge id is the idempotency key: a retried request cannot create a second
+  // charge at the provider. The provider has no field for an external reference.
   const providerCharge = await createOpapingouCharge({
     amountCents: charge.amountCents,
-    reference: charge.id,
     description: CHARGE_DESCRIPTION,
+    idempotencyKey: charge.id,
   }).catch(async (err) => {
     await prisma.cloudSubscriptionCharge.deleteMany({
       where: {

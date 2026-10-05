@@ -19,15 +19,23 @@ vi.mock('@documenso/prisma', () => ({
 import { CLOUD_BILLING_WEBHOOK_MAX_BODY_BYTES, handleOpapingouWebhook } from './handle-webhook';
 import { signOpapingouWebhookBody } from './providers/opapingou/opapingou-webhook';
 
-const SECRET = 'webhook-secret-for-tests';
+const SECRET = 'whsec_webhook-secret-for-tests';
+
+const NOW = new Date('2026-10-05T12:00:00.000Z');
 
 const RAW_BODY = JSON.stringify({
-  id: 'evt_1',
-  evento: 'pingou',
-  cobranca: { id: 'cob_1', referencia: 'charge_1', valor: '99.90' },
+  id: 'evt-unit-1',
+  type: 'charge.paid',
+  occurredAt: '2026-10-05T12:00:00.000Z',
+  testMode: true,
+  data: { type: 'charge', object: { id: 'charge-1', amountCents: 9990 } },
 });
 
-const sign = (rawBody: string) => signOpapingouWebhookBody({ rawBody, secret: SECRET });
+const sign = (rawBody: string, timestamp = NOW.getTime() / 1000) =>
+  signOpapingouWebhookBody({ rawBody, secret: SECRET, timestamp });
+
+const handle = async (rawBody: string, signature: string | null | undefined) =>
+  await handleOpapingouWebhook({ rawBody, signature, now: NOW });
 
 describe('handleOpapingouWebhook without touching the database', () => {
   beforeEach(() => {
@@ -46,7 +54,7 @@ describe('handleOpapingouWebhook without touching the database', () => {
   it('is not found when billing is disabled, even with a valid signature', async () => {
     vi.stubEnv('NEXT_PUBLIC_CLOUD_BILLING_ENABLED', '');
 
-    const result = await handleOpapingouWebhook({ rawBody: RAW_BODY, signature: sign(RAW_BODY) });
+    const result = await handle(RAW_BODY, sign(RAW_BODY));
 
     expect(result).toEqual({ status: 404, outcome: 'DISABLED' });
   });
@@ -54,7 +62,7 @@ describe('handleOpapingouWebhook without touching the database', () => {
   it('refuses a body larger than the limit', async () => {
     const rawBody = 'a'.repeat(CLOUD_BILLING_WEBHOOK_MAX_BODY_BYTES + 1);
 
-    const result = await handleOpapingouWebhook({ rawBody, signature: sign(rawBody) });
+    const result = await handle(rawBody, sign(rawBody));
 
     expect(result).toEqual({ status: 413, outcome: 'BODY_TOO_LARGE' });
   });
@@ -62,7 +70,7 @@ describe('handleOpapingouWebhook without touching the database', () => {
   it('measures the body in bytes, not characters', async () => {
     const rawBody = 'ã'.repeat(CLOUD_BILLING_WEBHOOK_MAX_BODY_BYTES / 2 + 1);
 
-    const result = await handleOpapingouWebhook({ rawBody, signature: sign(rawBody) });
+    const result = await handle(rawBody, sign(rawBody));
 
     expect(result.status).toBe(413);
   });
@@ -71,18 +79,22 @@ describe('handleOpapingouWebhook without touching the database', () => {
     ['missing', undefined],
     ['null', null],
     ['empty', ''],
-    ['wrong', 'f'.repeat(64)],
+    ['wrong', `t=${NOW.getTime() / 1000},v1=${'f'.repeat(64)}`],
+    ['in the old presumed format', 'f'.repeat(64)],
   ])('is unauthorised with a %s signature', async (_label, signature) => {
-    const result = await handleOpapingouWebhook({ rawBody: RAW_BODY, signature });
+    const result = await handle(RAW_BODY, signature);
 
     expect(result).toEqual({ status: 401, outcome: 'INVALID_SIGNATURE' });
   });
 
   it('is unauthorised when the body was changed after signing', async () => {
-    const result = await handleOpapingouWebhook({
-      rawBody: RAW_BODY.replace('99.90', '0.01'),
-      signature: sign(RAW_BODY),
-    });
+    const result = await handle(RAW_BODY.replace('9990', '1'), sign(RAW_BODY));
+
+    expect(result).toEqual({ status: 401, outcome: 'INVALID_SIGNATURE' });
+  });
+
+  it('is unauthorised when the signature is older than the tolerance (replay)', async () => {
+    const result = await handle(RAW_BODY, sign(RAW_BODY, NOW.getTime() / 1000 - 301));
 
     expect(result).toEqual({ status: 401, outcome: 'INVALID_SIGNATURE' });
   });
@@ -90,19 +102,25 @@ describe('handleOpapingouWebhook without touching the database', () => {
   it('is unauthorised when no webhook secret is configured', async () => {
     vi.stubEnv('NEXT_PRIVATE_OPAPINGOU_WEBHOOK_SECRET', '');
 
-    const signature = signOpapingouWebhookBody({ rawBody: RAW_BODY, secret: '' });
+    const signature = signOpapingouWebhookBody({ rawBody: RAW_BODY, secret: '', timestamp: NOW.getTime() / 1000 });
 
-    const result = await handleOpapingouWebhook({ rawBody: RAW_BODY, signature });
+    const result = await handle(RAW_BODY, signature);
 
     expect(result).toEqual({ status: 401, outcome: 'INVALID_SIGNATURE' });
   });
 
   it.each([
     ['invalid JSON', '{not json'],
-    ['an event without a name', JSON.stringify({ id: 'evt_1' })],
     ['an empty body', ''],
+    ['a JSON array', '[]'],
+    ['JSON null', 'null'],
+    ['an event without id', JSON.stringify({ type: 'charge.paid' })],
+    [
+      'charge.paid without the charge id',
+      JSON.stringify({ id: 'evt-unit-2', type: 'charge.paid', data: { type: 'charge', object: {} } }),
+    ],
   ])('is a bad request for %s with a valid signature', async (_label, rawBody) => {
-    const result = await handleOpapingouWebhook({ rawBody, signature: sign(rawBody) });
+    const result = await handle(rawBody, sign(rawBody));
 
     expect(result).toEqual({ status: 400, outcome: 'INVALID_BODY' });
   });
