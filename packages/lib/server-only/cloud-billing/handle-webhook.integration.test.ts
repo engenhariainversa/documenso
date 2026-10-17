@@ -72,7 +72,7 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
       now = PAID_AT,
     }: NotifyOptions = {},
   ) => {
-    const { rawBody, signature } = api.buildSignedWebhook(
+    const { rawBody, signature, eventId, eventType } = api.buildSignedWebhook(
       {
         id: eventIdOf(delivery),
         type,
@@ -83,7 +83,13 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
       { timestamp: Math.floor(now.getTime() / 1000) },
     );
 
-    return await handleOpapingouWebhook({ rawBody, signature, now });
+    return await handleOpapingouWebhook({
+      rawBody,
+      signature,
+      eventIdHeader: eventId,
+      eventTypeHeader: eventType,
+      now,
+    });
   };
 
   const findCharge = async (id: string) => await prisma.cloudSubscriptionCharge.findUniqueOrThrow({ where: { id } });
@@ -198,17 +204,19 @@ describe.skipIf(!hasTestDatabase)('handleOpapingouWebhook', () => {
     expect(await countSubscriptions()).toBe(0);
   });
 
-  it('does nothing when the same notification is delivered again', async () => {
+  it('does nothing when the same notification is delivered again, without asking the provider', async () => {
     const charge = await startCheckout();
 
     payAtProvider(charge);
 
     const first = await notify(charge);
+    const readsAfterFirst = chargeReads().length;
     const second = await notify(charge, { now: new Date('2027-03-16T00:00:00.000Z') });
 
     const subscription = await findSubscription();
 
-    expect(second).toEqual({ status: 200, outcome: 'NOTHING_TO_CONFIRM', eventId: first.eventId });
+    expect(second).toEqual({ status: 200, outcome: 'ALREADY_PROCESSED', eventId: first.eventId, chargeId: charge.id });
+    expect(chargeReads()).toHaveLength(readsAfterFirst);
     expect(subscription.currentPeriodEnd.toISOString()).toBe('2027-04-15T12:05:00.000Z');
     expect(await prisma.cloudBillingWebhookEvent.count({ where: { eventId: first.eventId } })).toBe(1);
   });
